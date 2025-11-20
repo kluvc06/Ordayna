@@ -38,7 +38,7 @@ CREATE OR REPLACE TABLE intezmeny.room (
  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 CREATE OR REPLACE TABLE intezmeny.teacher ( 
-	id                   INT UNSIGNED   NOT NULL   PRIMARY KEY,
+	id                   INT UNSIGNED   NOT NULL  AUTO_INCREMENT PRIMARY KEY,
 	name                 VARCHAR(200)    NOT NULL   ,
 	job                  VARCHAR(200)    NOT NULL   ,
 	subjects_undertaken  VARCHAR(400)       ,
@@ -54,7 +54,7 @@ ALTER TABLE intezmeny.teacher MODIFY phone_number VARCHAR(15)     COMMENT 'The m
 https://en.wikipedia.org/wiki/E.164';
 
 CREATE OR REPLACE TABLE intezmeny.teacher_availability ( 
-	id                   INT UNSIGNED   NOT NULL   PRIMARY KEY,
+	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	teacher_id           INT UNSIGNED   NOT NULL   ,
 	available_from_day   TINYINT UNSIGNED   NOT NULL   ,
 	available_from_time  TIME    NOT NULL   ,
@@ -82,10 +82,34 @@ CREATE OR REPLACE TABLE intezmeny.timetable (
 	CONSTRAINT fk_timetable_teacher FOREIGN KEY ( teacher_id ) REFERENCES intezmeny.teacher( id ) ON DELETE SET NULL ON UPDATE NO ACTION
  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
-CREATE OR REPLACE INDEX fk_timetable_group_ ON intezmeny.timetable ( group_id );
+CREATE OR REPLACE INDEX fk_timetable_group ON intezmeny.timetable ( group_id );
 
 CREATE OR REPLACE INDEX fk_timetable_class ON intezmeny.timetable ( room_id );
 
 CREATE OR REPLACE INDEX fk_timetable_lesson ON intezmeny.timetable ( lesson_id );
 
 CREATE OR REPlACE INDEX fk_timetable_teacher ON intezmeny.timetable ( teacher_id );
+
+CREATE OR REPLACE TABLE intezmeny.homework (
+	id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	published     DATETIME NOT NULL DEFAULT NOW(),
+	due           DATETIME,
+	lesson_id     INT UNSIGNED,
+	teacher_id    INT UNSIGNED,
+	CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES intezmeny.lesson( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
+	CONSTRAINT fk_homework_teacher FOREIGN KEY ( teacher_id ) REFERENCES intezmeny.teacher( id ) ON DELETE SET NULL ON UPDATE NO ACTION
+);
+
+CREATE OR REPLACE TABLE intezmeny.attachments (
+	id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	file_name VARCHAR(255) NOT NULL
+);
+
+CREATE OR REPLACE TABLE intezmeny.homework_attachments (
+	id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	homework_id    INT UNSIGNED NOT NULL,
+	attachments_id INT UNSIGNED NOT NULL,
+	
+	CONSTRAINT fk_join_homework FOREIGN KEY ( homework_id ) REFERENCES intezmeny.homework( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
+	CONSTRAINT fk_join_attachment FOREIGN KEY ( attachments_id ) REFERENCES intezmeny.attachments( id ) ON DELETE CASCADE ON UPDATE NO ACTION
+);

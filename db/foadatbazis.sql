@@ -9,7 +9,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 CREATE OR REPLACE TABLE foadatbazis.intezmeny_ids ( 
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	intezmeny_id         INT UNSIGNED   NOT NULL   
- ) engine=InnoDB;
+ ) engine=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 DELIMITER //
 CREATE OR REPLACE PROCEDURE foadatbazis.detach_intezmeny(
@@ -29,7 +29,7 @@ CREATE OR REPLACE TABLE foadatbazis.users (
 	password_hash        CHAR(128)    NOT NULL   ,
 	salt                 CHAR(80) NOT NULL,
 	CONSTRAINT users_email UNIQUE ( email ) 
- ) engine=InnoDB;
+ ) engine=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 CREATE OR REPLACE TABLE foadatbazis.intezmeny_ids_users ( 
 	intezmeny_ids_id     INT UNSIGNED   NOT NULL   ,
