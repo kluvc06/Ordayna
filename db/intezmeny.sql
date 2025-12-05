@@ -37,7 +37,7 @@ CREATE OR REPLACE TABLE intezmeny.teacher (
 	id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	name                 VARCHAR(200) UNIQUE NOT NULL,
 	job                  VARCHAR(200) NOT NULL,
-	subjects_undertaken  VARCHAR(400),
+	subjects_undertaken  VARCHAR(400), --TODO: connect teacher with lesson via a connecting table
 	email                VARCHAR(254),
 	phone_number         VARCHAR(15)       
  ) ENGINE=InnoDB;
@@ -108,3 +108,25 @@ CREATE OR REPLACE TABLE intezmeny.homework_attachments (
 	CONSTRAINT fk_join_homework FOREIGN KEY ( homework_id ) REFERENCES intezmeny.homework( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
 	CONSTRAINT fk_join_attachment FOREIGN KEY ( attachments_id ) REFERENCES intezmeny.attachments( id ) ON DELETE CASCADE ON UPDATE NO ACTION
 );
+
+delimiter //
+
+create procedure newTeacher
+(
+in in_name VARCHAR(200),
+in in_job VARCHAR(200),
+in in_subjects_undertaken VARCHAR(200), --TODO: same thing here
+in in_email VARCHAR(254),
+in in_phone_number VARCHAR(15)
+)
+
+BEGIN
+
+INSERT INTO teacher
+(name, job, subjects_undertaken, email, phone_number)
+VALUES
+(in_name, in_job, in_subjects_undertaken,in_email, in_phone_number);
+
+END//
+
+delimiter ;
