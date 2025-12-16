@@ -1,0 +1,4 @@
+backend/composer.json
+backend/composer.lock
+backend/vendor
+backend/secret.key

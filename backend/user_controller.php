@@ -1,9 +1,18 @@
 <?php
 
 include "main_db.php";
+include "jwt.php";
 
 class UserController
 {
+
+    private $jwt;
+
+    function __construct()
+    {
+        $this->jwt = new JWT();
+    }
+
     /**
      * Returns null on failure and users in json format on success
      */
@@ -20,6 +29,71 @@ class UserController
 
         return json_encode($res->fetch_all());
     }
+
+    public function getSessionToken(): TokenRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+
+        $main_db = new MainDb();
+
+        if (
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
+            !isset($data->pass) or !is_string($data->pass)
+        ) {
+            return TokenRet::bad_request;
+        }
+
+        if (!$main_db->userExistsEmail($data->email)) {
+            return TokenRet::user_does_not_exist;
+        }
+
+        $user_pass = $main_db->getUserPassViaEmail($data->email);
+        if (!$user_pass or !password_verify($data->pass, $user_pass)) {
+            return TokenRet::unauthorised;
+        }
+
+        $user_id = $main_db->getUserIdViaEmail($data->email);
+        $ses_token = $this->jwt->createSessionToken($user_id);
+
+        $arr_cookie_options = array(
+            'expires' => time() + 60 * 60 * 24 * 15,
+            'path' => '/refresh_refresh_token',
+            'domain' => '',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        );
+        setcookie('RefreshToken', $ses_token->toString(), $arr_cookie_options);
+
+        return TokenRet::success;
+    }
+
+    public function refreshRefreshToken(): TokenRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+
+        $main_db = new MainDb();
+
+        $token = $this->jwt->parseToken($_COOKIE["RefreshToken"]);
+        if ($token === null) {
+            return TokenRet::bad_request;
+        }
+        $user_id = $token->claims()->get("uid");
+        $ses_token = $this->jwt->createSessionToken($user_id);
+
+        $arr_cookie_options = array(
+            'expires' => time() + 60 * 60 * 24 * 15,
+            'path' => '/refresh_refresh_token',
+            'domain' => '',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        );
+        setcookie('RefreshToken', $ses_token->toString(), $arr_cookie_options);
+
+        return TokenRet::success;
+    }
+
     public function createUser(): CreateUserRet
     {
         $data = json_decode(file_get_contents("php://input"));
@@ -59,8 +133,10 @@ class UserController
 
         $main_db = new MainDb();
 
-        if (!isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
-            !isset($data->pass) or !is_string($data->pass)) {
+        if (
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
+            !isset($data->pass) or !is_string($data->pass)
+        ) {
             return DeleteUserRet::bad_request;
         }
 
@@ -68,7 +144,7 @@ class UserController
             return DeleteUserRet::user_does_not_exist;
         }
 
-        $user_pass = $main_db->getUserPassViaEmail($data->email)->fetch_all()[0][0];
+        $user_pass = $main_db->getUserPassViaEmail($data->email);
 
         if (!$user_pass or !password_verify($data->pass, $user_pass)) {
             return DeleteUserRet::unauthorised;
@@ -99,7 +175,7 @@ class UserController
             return ChangeUserRet::user_does_not_exist;
         }
 
-        $user_pass = $main_db->getUserPassViaEmail($data->email)->fetch_all()[0][0];
+        $user_pass = $main_db->getUserPassViaEmail($data->email);
 
         if (!$user_pass or !password_verify($data->pass, $user_pass)) {
             return ChangeUserRet::unauthorised;
@@ -131,7 +207,7 @@ class UserController
             return ChangeUserRet::user_does_not_exist;
         }
 
-        $user_pass = $main_db->getUserPassViaEmail($data->email)->fetch_all()[0][0];
+        $user_pass = $main_db->getUserPassViaEmail($data->email);
 
         if (!$user_pass or !password_verify($data->pass, $user_pass)) {
             return ChangeUserRet::unauthorised;
@@ -151,7 +227,7 @@ class UserController
         $main_db = new MainDb();
 
         if (
-            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or 
+            !isset($data->email) or !is_string($data->email) or !preg_match('/^[^@]+[@]+[^@]+$/', $data->email) or
             !isset($data->new_pass) or !is_string($data->new_pass) or strlen($data->new_pass) < 8 or
             !isset($data->pass) or !is_string($data->pass)
         ) {
@@ -162,18 +238,27 @@ class UserController
             return ChangeUserRet::user_does_not_exist;
         }
 
-        $user_pass = $main_db->getUserPassViaEmail($data->email)->fetch_all()[0][0];
+        $user_pass = $main_db->getUserPassViaEmail($data->email);
 
         if (!$user_pass or !password_verify($data->pass, $user_pass)) {
             return ChangeUserRet::unauthorised;
         }
 
-        if (!$main_db->changePasswordHashViaEmail($data->email, password_hash( $data->new_pass, PASSWORD_BCRYPT))) {
+        if (!$main_db->changePasswordHashViaEmail($data->email, password_hash($data->new_pass, PASSWORD_BCRYPT))) {
             return ChangeUserRet::unexpected_error;
         }
 
         return ChangeUserRet::success;
     }
+}
+
+enum TokenRet
+{
+    case success;
+    case bad_request;
+    case unauthorised;
+    case user_does_not_exist;
+    case unexpected_error;
 }
 
 enum CreateUserRet

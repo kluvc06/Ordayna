@@ -34,7 +34,21 @@ class MainDb
         }
     }
 
-    function getUserPassViaEmail(string $email): mysqli_result|bool
+    function getUserIdViaEmail(string $email): int|bool
+    {
+        try {
+            return $this->connection->execute_query(
+                '
+                    SELECT id FROM users WHERE email = ?;
+                ',
+                array($email),
+            )->fetch_all()[0][0];
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function getUserPassViaEmail(string $email): string|bool
     {
         try {
             return $this->connection->execute_query(
@@ -42,7 +56,7 @@ class MainDb
                     SELECT password_hash FROM users WHERE email = ?;
                 ',
                 array($email),
-            );
+            )->fetch_all()[0][0];
         } catch (Exception $e) {
             return false;
         }
