@@ -40,8 +40,15 @@ CREATE OR REPLACE TABLE ordayna_main_db.intezmeny_ids_users (
 
 CREATE TABLE OR REPLACE ordayna_main_db.revoked_refresh_token (
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
-	uuid                 UUID           NOT NULL
+	uuid                 UUID           NOT NULL,
+	created_at           DATETIME       NOT NULL DEFAULT current_timestamp(),
+	duration             INT UNSIGNED   NOT NULL
  ) ENGINE=InnoDB;
+
+CREATE EVENT remove_token
+  ON SCHEDULE EVERY 5 MINUTE DO 
+   DELETE FROM ordayna_main_db.revoked_refresh_token
+	WHERE DATE_ADD(created_at, INTERVAL duration DAY)<current_timestamp();
 
 
 CREATE OR REPLACE USER ordayna_main;
