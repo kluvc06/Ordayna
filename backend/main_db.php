@@ -1,4 +1,3 @@
-
 <?php
 
 class MainDb
@@ -78,6 +77,22 @@ class MainDb
         return $ret->fetch_all()[0][0];
     }
 
+    function userExistsViaId(int $uid): bool
+    {
+        try {
+            $ret = $this->connection->execute_query(
+                '
+                    SELECT EXISTS(SELECT * FROM users WHERE id = ?)
+                ',
+                array($uid)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return $ret->fetch_all()[0][0];
+    }
+
     /**
      * Assumes the user doesn't exist
      * Returns true on success and false on error
@@ -101,14 +116,14 @@ class MainDb
      * Assumes the user exists
      * Returns true on success and false on error
      */
-    function deleteUserViaEmail(string $email): bool
+    function deleteUserViaId(int $uid): bool
     {
         try {
             return $this->connection->execute_query(
                 '
-                    DELETE FROM users WHERE email = ?;
+                    DELETE FROM users WHERE id = ?;
                 ',
-                array($email),
+                array($uid),
             );
         } catch (Exception $e) {
             return false;
@@ -119,14 +134,14 @@ class MainDb
      * Assumes the user exists
      * Returns true on success and false on error
      */
-    function changeDisplayNameViaEmail(string $email, string $new_disp_name): bool
+    function changeDisplayNameViaId(int $uid, string $new_disp_name): bool
     {
         try {
             return $this->connection->execute_query(
                 '
-                    UPDATE users SET display_name = ? WHERE email = ?;
+                    UPDATE users SET display_name = ? WHERE id = ?;
                 ',
-                array($new_disp_name, $email),
+                array($new_disp_name, $uid),
             );
         } catch (Exception $e) {
             return false;
@@ -137,14 +152,14 @@ class MainDb
      * Assumes the user exists
      * Returns true on success and false on error
      */
-    function changePhoneNumberViaEmail(string $email, string $new_phone_number): bool
+    function changePhoneNumberViaId(int $uid, string $new_phone_number): bool
     {
         try {
             return $this->connection->execute_query(
                 '
-                    UPDATE users SET phone_number = ? WHERE email = ?;
+                    UPDATE users SET phone_number = ? WHERE id = ?;
                 ',
-                array($new_phone_number, $email),
+                array($new_phone_number, $uid),
             );
         } catch (Exception $e) {
             return false;
@@ -155,14 +170,51 @@ class MainDb
      * Assumes the user exists
      * Returns true on success and false on error
      */
-    function changePasswordHashViaEmail(string $email, string $new_pass_hash): bool
+    function changePasswordHashViaId(int $uid, string $new_pass_hash): bool
     {
         try {
             return $this->connection->execute_query(
                 '
-                    UPDATE users SET password_hash = ? WHERE email = ?;
+                    UPDATE users SET password_hash = ? WHERE id = ?;
                 ',
-                array($new_pass_hash, $email),
+                array($new_pass_hash, $uid),
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function getRevokedRefreshTokens(): array|bool
+    {
+        try {
+            $res = $this->connection->execute_query(
+                '
+                    SELECT uuid FROM revoked_refresh_tokens;
+                '
+            )->fetch_all();
+
+            $ret_arr = array();
+            for ($i = 0; $i < count($res); $i++) {
+                array_push($ret_arr, $res[$i][0]);
+            }
+            
+            return $ret_arr;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns true on success and false on error
+     */
+    function newInvalidRefreshToken(string $uuid): bool
+    {
+        try {
+            return $this->connection->execute_query(
+                '
+                    INSERT INTO revoked_refresh_tokens (uuid) VALUE (?);
+                ',
+                array($uuid)
             );
         } catch (Exception $e) {
             return false;

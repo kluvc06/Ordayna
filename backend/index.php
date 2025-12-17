@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require 'vendor/autoload.php';
@@ -56,12 +57,31 @@ switch ($req_uri[1]) {
         echo $res;
         http_response_code(200);
         break;
-    case "get_session_token":
+    case "token":
+        if (count($req_uri) <= 2) {
+            http_response_code(404);
+            break;
+        }
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->getSessionToken();
+
+        $res;
+        switch ($req_uri[2]) {
+            case "get_refresh_token":
+                $res = $user_controller->getRefreshToken();
+                break;
+            case "refresh_refresh_token":
+                $res = $user_controller->refreshRefreshToken();
+                break;
+            case "get_access_token":
+                $res = $user_controller->getAccessToken();
+                break;
+            default:
+                http_response_code(404);
+                return;
+        }
         switch ($res) {
             case TokenRet::success:
                 http_response_code(200);

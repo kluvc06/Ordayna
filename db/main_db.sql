@@ -38,7 +38,7 @@ CREATE OR REPLACE TABLE ordayna_main_db.intezmeny_ids_users (
 	CONSTRAINT fk_intezmeny_ids_users_users FOREIGN KEY ( users_id ) REFERENCES ordayna_main_db.users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
  ) ENGINE = InnoDB;
 
-CREATE TABLE OR REPLACE ordayna_main_db.revoked_refresh_token (
+CREATE OR REPLACE TABLE ordayna_main_db.revoked_refresh_tokens (
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	uuid                 UUID           NOT NULL
  ) ENGINE=InnoDB;
