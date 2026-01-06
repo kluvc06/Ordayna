@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+require 'vendor/autoload.php';
+
 include "user_controller.php";
 $user_controller = new UserController();
 
@@ -53,141 +57,67 @@ switch ($req_uri[1]) {
         echo $res;
         http_response_code(200);
         break;
+    case "token":
+        if (count($req_uri) <= 2) {
+            http_response_code(404);
+            break;
+        }
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+
+        $res;
+        switch ($req_uri[2]) {
+            case "get_refresh_token":
+                $res = $user_controller->getRefreshToken();
+                break;
+            case "refresh_refresh_token":
+                $res = $user_controller->refreshRefreshToken();
+                break;
+            case "get_access_token":
+                $res = $user_controller->getAccessToken();
+                break;
+            default:
+                http_response_code(404);
+                return;
+        }
+        handleReturn($res);
+        break;
     case "create_user":
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->createUser();
-        switch ($res) {
-            case CreateUserRet::success:
-                http_response_code(201);
-                break;
-            case CreateUserRet::bad_request:
-                http_response_code(400);
-                echo "Bad request";
-                break;
-            case CreateUserRet::user_already_exists:
-                http_response_code(400);
-                echo "User already exists";
-                break;
-            case CreateUserRet::unexpected_error:
-                http_response_code(400);
-                echo "Unexpected error";
-                break;
-        };
+        handleReturn($user_controller->createUser());
         break;
     case "delete_user":
         if ($_SERVER["REQUEST_METHOD"] != "DELETE") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->deleteUser();
-        switch ($res) {
-            case DeleteUserRet::success:
-                http_response_code(204);
-                break;
-            case DeleteUserRet::bad_request:
-                http_response_code(400);
-                echo "Bad request";
-                break;
-            case DeleteUserRet::user_does_not_exist:
-                http_response_code(400);
-                echo "User does not exist";
-                break;
-            case DeleteUserRet::unauthorised:
-                http_response_code(403);
-                echo "Incorrect email and password pair";
-                break;
-            case DeleteUserRet::unexpected_error:
-                http_response_code(400);
-                echo "Unexpected error";
-                break;
-        }
+        handleReturn($user_controller->deleteUser());
         break;
     case "change_disp_name":
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->changeDisplayName();
-        switch ($res) {
-            case ChangeUserRet::success:
-                http_response_code(204);
-                break;
-            case ChangeUserRet::bad_request:
-                http_response_code(400);
-                echo "Bad request";
-                break;
-            case ChangeUserRet::user_does_not_exist:
-                http_response_code(400);
-                echo "User does not exist";
-                break;
-            case ChangeUserRet::unauthorised:
-                http_response_code(403);
-                echo "Incorrect email and password pair";
-                break;
-            case ChangeUserRet::unexpected_error:
-                http_response_code(400);
-                echo "Unexpected error";
-                break;
-        }
+        handleReturn($user_controller->changeDisplayName());
         break;
     case "change_phone_number":
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->changePhoneNumber();
-        switch ($res) {
-            case ChangeUserRet::success:
-                http_response_code(204);
-                break;
-            case ChangeUserRet::bad_request:
-                http_response_code(400);
-                echo "Bad request";
-                break;
-            case ChangeUserRet::user_does_not_exist:
-                http_response_code(400);
-                echo "User does not exist";
-                break;
-            case ChangeUserRet::unauthorised:
-                http_response_code(403);
-                echo "Incorrect email and password pair";
-                break;
-            case ChangeUserRet::unexpected_error:
-                http_response_code(400);
-                echo "Unexpected error";
-                break;
-        }
+        handleReturn($user_controller->changePhoneNumber());
         break;
     case "change_pass":
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
             http_response_code(405);
             break;
         }
-        $res = $user_controller->changePassword();
-        switch ($res) {
-            case ChangeUserRet::success:
-                http_response_code(204);
-                break;
-            case ChangeUserRet::bad_request:
-                http_response_code(400);
-                echo "Bad request";
-                break;
-            case ChangeUserRet::user_does_not_exist:
-                http_response_code(400);
-                echo "User does not exist";
-                break;
-            case ChangeUserRet::unauthorised:
-                http_response_code(403);
-                echo "Incorrect email and password pair";
-                break;
-            case ChangeUserRet::unexpected_error:
-                http_response_code(400);
-                echo "Unexpected error";
-                break;
-        }
+        handleReturn($user_controller->changePassword());
         break;
     default:
         http_response_code(404);
