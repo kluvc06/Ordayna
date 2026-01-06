@@ -61,8 +61,6 @@ class UserController
         $user_id = $main_db->getUserIdViaEmail($data->email);
         $refresh_token = $this->jwt->createRefreshToken($user_id);
 
-        echo $refresh_token->toString() . "\n";
-
         $arr_cookie_options = array(
             'expires' => time() + 60 * 60 * 24 * 15,
             'path' => '/token/',

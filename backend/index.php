@@ -148,7 +148,7 @@ switch ($req_uri[1]) {
                 break;
             case DeleteUserRet::unauthorised:
                 http_response_code(403);
-                echo "Incorrect email and password pair";
+                echo "Unauthorised";
                 break;
             case DeleteUserRet::unexpected_error:
                 http_response_code(400);
@@ -176,7 +176,7 @@ switch ($req_uri[1]) {
                 break;
             case ChangeUserRet::unauthorised:
                 http_response_code(403);
-                echo "Incorrect email and password pair";
+                echo "Unauthorised";
                 break;
             case ChangeUserRet::unexpected_error:
                 http_response_code(400);
@@ -204,7 +204,7 @@ switch ($req_uri[1]) {
                 break;
             case ChangeUserRet::unauthorised:
                 http_response_code(403);
-                echo "Incorrect email and password pair";
+                echo "Unauthorised";
                 break;
             case ChangeUserRet::unexpected_error:
                 http_response_code(400);
@@ -232,7 +232,7 @@ switch ($req_uri[1]) {
                 break;
             case ChangeUserRet::unauthorised:
                 http_response_code(403);
-                echo "Incorrect email and password pair";
+                echo "Unauthorised";
                 break;
             case ChangeUserRet::unexpected_error:
                 http_response_code(400);
