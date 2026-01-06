@@ -38,17 +38,17 @@ CREATE OR REPLACE TABLE ordayna_main_db.intezmeny_ids_users (
 	CONSTRAINT fk_intezmeny_ids_users_users FOREIGN KEY ( users_id ) REFERENCES ordayna_main_db.users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
  ) ENGINE = InnoDB;
 
-CREATE TABLE OR REPLACE ordayna_main_db.revoked_refresh_token (
+CREATE OR REPLACE TABLE ordayna_main_db.revoked_refresh_tokens (
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	uuid                 UUID           NOT NULL,
 	created_at           DATETIME       NOT NULL DEFAULT current_timestamp(),
-	duration             INT UNSIGNED   NOT NULL
+	duration             TIME           NOT NULL
  ) ENGINE=InnoDB;
 
-CREATE EVENT remove_token
+CREATE EVENT ordayna_main_db.remove_token
   ON SCHEDULE EVERY 5 MINUTE DO 
-   DELETE FROM ordayna_main_db.revoked_refresh_token
-	WHERE DATE_ADD(created_at, INTERVAL duration DAY)<current_timestamp();
+   DELETE FROM ordayna_main_db.revoked_refresh_tokens
+	WHERE ADDTIME(created_at, duration)<current_timestamp();
 
 
 CREATE OR REPLACE USER ordayna_main;

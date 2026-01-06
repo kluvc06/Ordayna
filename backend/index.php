@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+require 'vendor/autoload.php';
+
 include "user_controller.php";
 $user_controller = new UserController();
 
@@ -52,6 +56,53 @@ switch ($req_uri[1]) {
         }
         echo $res;
         http_response_code(200);
+        break;
+    case "token":
+        if (count($req_uri) <= 2) {
+            http_response_code(404);
+            break;
+        }
+        if ($_SERVER["REQUEST_METHOD"] != "POST") {
+            http_response_code(405);
+            break;
+        }
+
+        $res;
+        switch ($req_uri[2]) {
+            case "get_refresh_token":
+                $res = $user_controller->getRefreshToken();
+                break;
+            case "refresh_refresh_token":
+                $res = $user_controller->refreshRefreshToken();
+                break;
+            case "get_access_token":
+                $res = $user_controller->getAccessToken();
+                break;
+            default:
+                http_response_code(404);
+                return;
+        }
+        switch ($res) {
+            case TokenRet::success:
+                http_response_code(200);
+                break;
+            case TokenRet::bad_request:
+                http_response_code(400);
+                echo "Bad request";
+                break;
+            case TokenRet::user_does_not_exist:
+                http_response_code(400);
+                echo "User does not exist";
+                break;
+            case TokenRet::unauthorised:
+                http_response_code(403);
+                echo "Unauthorised";
+                break;
+            case TokenRet::unexpected_error:
+                http_response_code(400);
+                echo "Unexpected error";
+                break;
+        };
         break;
     case "create_user":
         if ($_SERVER["REQUEST_METHOD"] != "POST") {
