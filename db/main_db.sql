@@ -34,6 +34,7 @@ CREATE OR REPLACE TABLE ordayna_main_db.intezmeny_ids_users (
 	id                   INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	intezmeny_ids_id     INT UNSIGNED   NOT NULL   ,
 	users_id             INT UNSIGNED   NOT NULL   ,
+	is_admin             BOOLEAN        NOT NULL   ,
 	CONSTRAINT fk_intezmeny_ids_users FOREIGN KEY ( intezmeny_ids_id ) REFERENCES ordayna_main_db.intezmeny_ids( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
 	CONSTRAINT fk_intezmeny_ids_users_users FOREIGN KEY ( users_id ) REFERENCES ordayna_main_db.users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
  ) ENGINE = InnoDB;
