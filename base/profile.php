@@ -59,4 +59,5 @@
             </td>
         </tr>
     </table>
+    <br><button onclick="location.href='index.php'" id="home_button">home</button>
 </div>   
