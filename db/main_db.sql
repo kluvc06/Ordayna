@@ -25,17 +25,18 @@ END;
 DELIMITER ;
 
 CREATE OR REPLACE TABLE users ( 
-	id            INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
-	display_name  VARCHAR(200)   NOT NULL,
-	email         VARCHAR(254)   UNIQUE NOT NULL,
+	id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	display_name  VARCHAR(200) NOT NULL,
+	email         VARCHAR(254) UNIQUE NOT NULL,
 	phone_number  VARCHAR(15),
-	password_hash BINARY(60)     NOT NULL
+	password_hash BINARY(60) NOT NULL
  );
 
 CREATE OR REPLACE TABLE intezmeny_users (
-	id           INT UNSIGNED   NOT NULL AUTO_INCREMENT  PRIMARY KEY,
-	intezmeny_id INT UNSIGNED   NOT NULL   ,
-	users_id     INT UNSIGNED   NOT NULL   ,
+	id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	intezmeny_id INT UNSIGNED NOT NULL,
+	users_id     INT UNSIGNED NOT NULL,
+	is_admin     BOOLEAN NOT NULL,
 	CONSTRAINT fk_intezmeny_users FOREIGN KEY ( intezmeny_id ) REFERENCES intezmeny( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
 	CONSTRAINT fk_intezmeny_users_users FOREIGN KEY ( users_id ) REFERENCES users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
  );
