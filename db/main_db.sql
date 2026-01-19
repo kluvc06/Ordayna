@@ -13,17 +13,6 @@ CREATE OR REPLACE TABLE intezmeny (
 	name VARCHAR(200) NOT NULL
  );
 
-DELIMITER //
-CREATE OR REPLACE PROCEDURE detach_intezmeny(
-	intezmeny_id_to_detach INT UNSIGNED
-) BEGIN
-	DELETE FROM foadatbazis.intezmeny_ids
-	WHERE intezmeny_ids.id = intezmeny_id_to_detach
-	;
-END;
-//
-DELIMITER ;
-
 CREATE OR REPLACE TABLE users ( 
 	id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	display_name  VARCHAR(200) NOT NULL,
