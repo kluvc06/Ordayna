@@ -448,7 +448,6 @@ class DB
             }
             return true;
         } catch (Exception $e) {
-            echo $this->connection->error . PHP_EOL;
             return false;
         }
     }
