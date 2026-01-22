@@ -577,271 +577,171 @@ class DB
     ';
 
     private $intezmeny_procedures = '
-        -- procedures  
-
-CREATE OR REPLACE PROCEDURE newClass ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO class (name, headcount) VALUES (in_name, in_headcount);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modClass ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )  
-
-BEGIN  
-
-UPDATE class SET name=in_name, headcount=in_headcount WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delClass ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM class WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newGroup_ ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO group_ (name, headcount, class_id) VALUES (in_name, in_headcount, in_class_id);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modGroup_ ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE group_ SET name=in_name, headcount=in_headcount, class_id=in_class_id WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delGroup_ ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM group_ WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newLesson ( IN in_name VARCHAR(200) )  
-
-BEGIN  
-
-INSERT INTO lesson (name) VALUES (in_name);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modLesson ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200) )  
-
-BEGIN  
-
-UPDATE lesson SET name=in_name WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delLesson ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM lesson WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newRoom ( IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO room (name, room_type, space) VALUES (in_name, in_room_type, in_space);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modRoom ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE room SET name=in_name, room_type=in_room_type, space=in_space WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delRoom ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM room WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )  
-
-BEGIN  
-
-INSERT INTO teacher (name, job, email, phone_number) VALUES (in_name, in_job, in_email, in_phone_number);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )  
-
-BEGIN  
-
-UPDATE teacher SET name=in_name, job=in_job, email=in_email, phone_number=in_phone_number WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delTeacher ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM teacher WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newTeacher_lesson ( IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO teacher_lesson (teacher_id, lesson_id) VALUES (in_teacher_id, in_lesson_id);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modTeacher_lesson ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE teacher_lesson SET teacher_id=in_teacher_id, lesson_id=in_lesson_id WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delTeacher_lesson ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM teacher_lesson WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newTeacher_availability ( IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )  
-
-BEGIN  
-
-INSERT INTO teacher_availability (teacher_id, available_from_day, available_from_time, available_until_day, available_until_time) VALUES (in_teacher_id, in_available_from_day, in_available_from_time, in_available_until_day, in_available_until_time);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modTeacher_availability ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )  
-
-BEGIN  
-
-UPDATE teacher_availability SET teacher_id=in_teacher_id, available_from_day=in_available_from_day, available_from_time=in_available_from_time, available_until_day=in_available_until_day, available_until_time=in_available_until_time WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delTeacher_availability ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM teacher_availability WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newTimetable ( IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO timetable (duration, group_id, lesson_id, teacher_id, room_id) VALUES (in_duration, in_group_id, in_lesson_id, in_teacher_id, in_room_id);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modTimetable ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE timetable SET duration=in_duration, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delTimetable ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM timetable WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newHomework ( IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO homework (due, lesson_id, teacher_id) VALUES (in_due, in_lesson_id, in_teacher_id);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modHomework ( IN in_id INT UNSIGNED, IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE homework SET due=in_due, lesson_id=in_lesson_id, teacher_id=in_teacher_id WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delHomework ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM homework WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newAttachments ( IN in_file_name VARCHAR(255) )  
-
-BEGIN  
-
-INSERT INTO attachments (file_name) VALUES (in_file_name);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modAttachments ( IN in_id INT UNSIGNED, IN in_file_name VARCHAR(255) )  
-
-BEGIN  
-
-UPDATE attachments SET file_name=in_file_name WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delAttachments ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM attachments WHERE id=in_id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE newHomework_attachments ( IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )  
-
-BEGIN  
-
-INSERT INTO homework_attachments (homework_id, attachments_id) VALUES (in_homework_id, in_attachments_id);  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE modHomework_attachments ( IN in_id INT UNSIGNED, IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )  
-
-BEGIN  
-
-UPDATE homework_attachments SET homework_id=in_homework_id, attachments_id=in_attachments_id WHERE in_id=id;  
-
-END;  
-
-CREATE OR REPLACE PROCEDURE delHomework_attachments ( IN in_id INT UNSIGNED )  
-
-BEGIN  
-
-DELETE FROM homework_attachments WHERE id=in_id;  
-
-END; 
-
- ';
+        -- procedures
+
+        CREATE OR REPLACE PROCEDURE newClass ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )
+        BEGIN
+            INSERT INTO class (name, headcount) VALUES (in_name, in_headcount);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modClass ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )
+        BEGIN
+            UPDATE class SET name=in_name, headcount=in_headcount WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delClass ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM class WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newGroup_ ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        BEGIN
+            INSERT INTO group_ (name, headcount, class_id) VALUES (in_name, in_headcount, in_class_id);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modGroup_ ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        BEGIN
+            UPDATE group_ SET name=in_name, headcount=in_headcount, class_id=in_class_id WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delGroup_ ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM group_ WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newLesson ( IN in_name VARCHAR(200) )
+        BEGIN
+            INSERT INTO lesson (name) VALUES (in_name);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modLesson ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200) )
+        BEGIN
+            UPDATE lesson SET name=in_name WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delLesson ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM lesson WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newRoom ( IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
+        BEGIN
+            INSERT INTO room (name, room_type, space) VALUES (in_name, in_room_type, in_space);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modRoom ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
+        BEGIN
+            UPDATE room SET name=in_name, room_type=in_room_type, space=in_space WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delRoom ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM room WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )
+        BEGIN
+            INSERT INTO teacher (name, job, email, phone_number) VALUES (in_name, in_job, in_email, in_phone_number);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )
+        BEGIN
+            UPDATE teacher SET name=in_name, job=in_job, email=in_email, phone_number=in_phone_number WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delTeacher ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM teacher WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newTeacher_lesson ( IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )
+        BEGIN
+            INSERT INTO teacher_lesson (teacher_id, lesson_id) VALUES (in_teacher_id, in_lesson_id);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modTeacher_lesson ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )
+        BEGIN
+            UPDATE teacher_lesson SET teacher_id=in_teacher_id, lesson_id=in_lesson_id WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delTeacher_lesson ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM teacher_lesson WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newTeacher_availability ( IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )
+        BEGIN
+            INSERT INTO teacher_availability (teacher_id, available_from_day, available_from_time, available_until_day, available_until_time) VALUES (in_teacher_id, in_available_from_day, in_available_from_time, in_available_until_day, in_available_until_time);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modTeacher_availability ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )
+        BEGIN
+            UPDATE teacher_availability SET teacher_id=in_teacher_id, available_from_day=in_available_from_day, available_from_time=in_available_from_time, available_until_day=in_available_until_day, available_until_time=in_available_until_time WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delTeacher_availability ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM teacher_availability WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newTimetable ( IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+        BEGIN
+            INSERT INTO timetable (duration, group_id, lesson_id, teacher_id, room_id) VALUES (in_duration, in_group_id, in_lesson_id, in_teacher_id, in_room_id);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modTimetable ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+        BEGIN
+            UPDATE timetable SET duration=in_duration, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delTimetable ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM timetable WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newHomework ( IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
+        BEGIN
+            INSERT INTO homework (due, lesson_id, teacher_id) VALUES (in_due, in_lesson_id, in_teacher_id);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modHomework ( IN in_id INT UNSIGNED, IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
+        BEGIN
+            UPDATE homework SET due=in_due, lesson_id=in_lesson_id, teacher_id=in_teacher_id WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delHomework ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM homework WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newAttachments ( IN in_file_name VARCHAR(255) )
+        BEGIN
+            INSERT INTO attachments (file_name) VALUES (in_file_name);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modAttachments ( IN in_id INT UNSIGNED, IN in_file_name VARCHAR(255) )
+        BEGIN
+            UPDATE attachments SET file_name=in_file_name WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delAttachments ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM attachments WHERE id=in_id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE newHomework_attachments ( IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )
+        BEGIN
+            INSERT INTO homework_attachments (homework_id, attachments_id) VALUES (in_homework_id, in_attachments_id);
+        END;
+
+        CREATE OR REPLACE PROCEDURE modHomework_attachments ( IN in_id INT UNSIGNED, IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )
+        BEGIN
+            UPDATE homework_attachments SET homework_id=in_homework_id, attachments_id=in_attachments_id WHERE in_id=id;
+        END;
+
+        CREATE OR REPLACE PROCEDURE delHomework_attachments ( IN in_id INT UNSIGNED )
+        BEGIN
+            DELETE FROM homework_attachments WHERE id=in_id;
+        END;
+    ';
 }
