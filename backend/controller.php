@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 // TODO: Rewrite getAllUsers
+// TODO: Use argon2id instead of bcrypt
 
 static $is_test_server = php_sapi_name() === "cli-server";
 /** 20 mebibytes */
@@ -47,12 +48,12 @@ class UserController
         $data = json_decode(file_get_contents("php://input"));
         $email = $this->validateEmail(@$data->email);
         if ($email === null) return ControllerRet::bad_request;
-        $pass = $this->validateString(@$data->pass, min_chars: 8);
+        $pass = $this->validateString(@$data->pass, min_chars: 8, max_chars: 300);
         if ($pass === null) return ControllerRet::bad_request;
 
         $db = new DB();
 
-        if (!$db->userExistsEmail($email)) return ControllerRet::user_does_not_exist;
+        if (!$db->userExistsEmail($email)) return ControllerRet::unauthorised;
 
         $user_pass = $db->getUserPassViaEmail($email);
         if (!$user_pass or !password_verify($pass, $user_pass)) return ControllerRet::unauthorised;
@@ -129,7 +130,7 @@ class UserController
         if ($disp_name === null) return ControllerRet::bad_request;
         $email = $this->validateEmail(@$data->email);
         if ($email === null) return ControllerRet::bad_request;
-        $pass = $this->validateString(@$data->pass, min_chars: 8);
+        $pass = $this->validateString(@$data->pass, min_chars: 8, max_chars: 300);
         if ($pass === null) return ControllerRet::bad_request;
         $phone_number = $this->validatePhoneNumber(@$data->phone_number, true);
         if ($phone_number === null) return ControllerRet::bad_request;
@@ -140,22 +141,20 @@ class UserController
         if ($db->userExistsEmail($email)) return ControllerRet::user_already_exists;
 
         $pass_hash = password_hash($pass, PASSWORD_BCRYPT);
-        if (!$db->createUser($disp_name, $email, $phone_number, $pass_hash)) return ControllerRet::unexpected_error;
+        if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
 
     public function deleteUser(): ControllerRet
     {
-        $token = $this->validateAccessToken();
+        $db = new DB();
+        
+        $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet")) return $token;
 
-        $db = new DB();
-
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
-
         // TODO: delete intezmeny's whose sole owner is this user
-        if (!$db->deleteUserViaId($token->claims()->get("uid"))) return ControllerRet::unexpected_error;
+        if ($db->deleteUserViaId($token->claims()->get("uid")) === false) return ControllerRet::unexpected_error;
 
         // Unset token cookies
         setcookie('RefreshToken', "", 0);
@@ -170,14 +169,12 @@ class UserController
         $new_disp_name = $this->validateString(@$data->new_disp_name, max_chars: 200);
         if ($new_disp_name === null) return ControllerRet::bad_request;
 
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
-        if (!$db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name)) return ControllerRet::unexpected_error;
+        if ($db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name) === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -188,14 +185,12 @@ class UserController
         $new_phone_number = $this->validatePhoneNumber(@$data->new_phone_number, false);
         if ($new_phone_number === null) return ControllerRet::bad_request;
 
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
-        if (!$db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number)) return ControllerRet::unexpected_error;
+        if ($db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number) === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -204,17 +199,15 @@ class UserController
     public function changePassword(): ControllerRet
     {
         $data = json_decode(file_get_contents("php://input"));
-        $new_pass = $this->validateString(@$data->new_pass, min_chars: 8);
+            $new_pass = $this->validateString(@$data->new_pass, min_chars: 8, max_chars: 300);
         if ($new_pass === null) return ControllerRet::bad_request;
-
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
 
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
-        if (!$db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT))) return ControllerRet::unexpected_error;
+        if ($db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT)) === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -225,12 +218,10 @@ class UserController
         $intezmeny_name = $this->validateString(@$data->intezmeny_name, max_chars: 200);
         if ($intezmeny_name === null) return ControllerRet::bad_request;
 
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
         if (!$db->createIntezmeny($intezmeny_name, $token->claims()->get("uid"))) return ControllerRet::unexpected_error;
 
@@ -243,12 +234,12 @@ class UserController
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
 
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
+
+        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::unauthorised;
         if (!$db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id)) return ControllerRet::unauthorised;
 
         if (!$db->deleteIntezmeny($intezmeny_id)) return ControllerRet::unexpected_error;
@@ -259,12 +250,10 @@ class UserController
 
     public function getIntezmenys(): ControllerRet
     {
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
         $ret = $db->getIntezmenys($token->claims()->get("uid"));
         if (!$ret) return ControllerRet::unexpected_error;
@@ -440,7 +429,7 @@ class UserController
         if (is_a($ret, "ControllerRet")) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if (!$db->homeworkExists($intezmeny_id, $homework_id)) return ControllerRet::bad_request;
+        if (!$db->homeworkExists($intezmeny_id, $homework_id)) return ControllerRet::unauthorised;
 
         $attachment_id = $db->createAttachment($intezmeny_id, $homework_id, $file_name);
         if ($attachment_id === false) return ControllerRet::unexpected_error;
@@ -566,10 +555,10 @@ class UserController
         if (is_a($ret, "ControllerRet")) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->attachmentExists($intezmeny_id, $attachment_id) === false) return ControllerRet::bad_request;
+        if ($db->attachmentExists($intezmeny_id, $attachment_id) === false) return ControllerRet::unauthorised;
 
         $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
-        if ($attachment_id === false) return ControllerRet::bad_request;
+        if ($attachment_id === false) return ControllerRet::unexpected_error;
 
         $file_contents = file_get_contents("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id);
         if ($file_contents === false) return ControllerRet::unexpected_error;
@@ -588,12 +577,10 @@ class UserController
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
 
-        $token = $this->validateAccessToken();
-        if (is_a($token, "ControllerRet")) return $token;
-
         $db = new DB();
 
-        if (!$db->userExistsViaId($token->claims()->get("uid"))) return ControllerRet::user_does_not_exist;
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet")) return $token;
 
         if (!$db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id)) return ControllerRet::unauthorised;
 
@@ -602,25 +589,29 @@ class UserController
 
     private function validateRefreshToken(DB $db): ControllerRet|UnencryptedToken
     {
-        if (!isset($_COOKIE["RefreshToken"]) or !is_string($_COOKIE["RefreshToken"])) return ControllerRet::bad_request;
+        if (isset($_COOKIE["RefreshToken"]) === false or is_string($_COOKIE["RefreshToken"]) === false) return ControllerRet::bad_request;
 
         $token = $this->jwt->parseToken($_COOKIE["RefreshToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
         $invalid_ids = $db->getRevokedRefreshTokens();
-        if (!$this->jwt->validateRefreshToken($token, $invalid_ids)) return ControllerRet::unauthorised;
+        if ($this->jwt->validateRefreshToken($token, $invalid_ids) === false) return ControllerRet::unauthorised;
+
+        if ($db->userExistsViaId($token->claims()->get("uid")) === false) return ControllerRet::unauthorised;
 
         return $token;
     }
 
-    private function validateAccessToken(): ControllerRet|UnencryptedToken
+    private function validateAccessToken(DB $db): ControllerRet|UnencryptedToken
     {
-        if (!isset($_COOKIE["AccessToken"]) or !is_string($_COOKIE["AccessToken"])) return ControllerRet::bad_request;
+        if (isset($_COOKIE["AccessToken"]) === false or is_string($_COOKIE["AccessToken"]) === false) return ControllerRet::bad_request;
 
         $token = $this->jwt->parseToken($_COOKIE["AccessToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
-        if (!$this->jwt->validateAccessToken($token)) return ControllerRet::unauthorised;
+        if ($this->jwt->validateAccessToken($token) === false) return ControllerRet::unauthorised;
+
+        if ($db->userExistsViaId($token->claims()->get("uid")) === false) return ControllerRet::unauthorised;
 
         return $token;
     }
@@ -802,10 +793,6 @@ function handleReturn(ControllerRet $ret_val): void
             http_response_code(400);
             echo "Bad request";
             break;
-        case ControllerRet::user_does_not_exist:
-            http_response_code(400);
-            echo "User does not exist";
-            break;
         case ControllerRet::user_already_exists:
             http_response_code(400);
             echo "User already exists";
@@ -818,6 +805,10 @@ function handleReturn(ControllerRet $ret_val): void
             http_response_code(500);
             echo "Unexpected error";
             break;
+        default:
+            http_response_code(500);
+            echo "You shouldn't be seeing this, congrats";
+            break;
     }
 }
 
@@ -828,7 +819,6 @@ enum ControllerRet
     case success_no_content;
     case bad_request;
     case unauthorised;
-    case user_does_not_exist;
     case user_already_exists;
     case unexpected_error;
 }

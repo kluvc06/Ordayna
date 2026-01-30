@@ -62,27 +62,33 @@ switch ($req_uri[1]) {
             http_response_code(404);
             break;
         }
-        if ($_SERVER["REQUEST_METHOD"] != "POST") {
-            http_response_code(405);
-            break;
-        }
 
-        $res;
         switch ($req_uri[2]) {
             case "get_refresh_token":
-                $res = $user_controller->getRefreshToken();
+                if ($_SERVER["REQUEST_METHOD"] != "POST") {
+                    http_response_code(405);
+                    break;
+                }
+                handleReturn($user_controller->getRefreshToken());
                 break;
             case "refresh_refresh_token":
-                $res = $user_controller->refreshRefreshToken();
+                if ($_SERVER["REQUEST_METHOD"] != "GET") {
+                    http_response_code(405);
+                    break;
+                }
+                handleReturn($user_controller->refreshRefreshToken());
                 break;
             case "get_access_token":
-                $res = $user_controller->getAccessToken();
+                if ($_SERVER["REQUEST_METHOD"] != "GET") {
+                    http_response_code(405);
+                    break;
+                }
+                handleReturn($user_controller->getAccessToken());
                 break;
             default:
                 http_response_code(404);
                 return;
         }
-        handleReturn($res);
         break;
     case "user":
         if (count($req_uri) <= 2) {
@@ -90,7 +96,6 @@ switch ($req_uri[1]) {
             break;
         }
 
-        $res;
         switch ($req_uri[2]) {
             case "create_user":
                 if ($_SERVER["REQUEST_METHOD"] != "POST") {
