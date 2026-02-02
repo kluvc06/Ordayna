@@ -104,9 +104,8 @@ class DB
     /**
      * Assumes the user doesn't exist
      * Returns true on success and false on error
-     * phone_number is either a string or null
      */
-    function createUser(string $display_name, string $email, mixed $phone_number, string $password_hash): bool
+    function createUser(string $display_name, string $email, string|null $phone_number, string $password_hash): bool
     {
         try {
             $ret = $this->connection->query("USE ordayna_main_db;");
@@ -284,7 +283,258 @@ class DB
         }
     }
 
-    function getClasses(int $intezmeny_id): mysqli_result|bool
+    function classExists(int $intezmeny_id, int $class_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM class WHERE id = ?);',
+                array($class_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function classExistsViaName(int $intezmeny_id, string $class_name): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM class WHERE name = ?);',
+                array($class_name)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function lessonExists(int $intezmeny_id, int $lesson_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM lesson WHERE id = ?);',
+                array($lesson_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function lessonExistsViaName(int $intezmeny_id, string $lesson_name): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM lesson WHERE name = ?);',
+                array($lesson_name)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function groupExistsViaName(int $intezmeny_id, string $group_name): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM group_ WHERE name = ?);',
+                array($group_name)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function roomExistsViaName(int $intezmeny_id, string $room_name): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM room WHERE name = ?);',
+                array($room_name)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function teacherExists(int $intezmeny_id, int $teacher_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                '
+                    SELECT EXISTS(SELECT * FROM teacher WHERE id = ?)
+                ',
+                array($teacher_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function homeworkExists(int $intezmeny_id, int $homework_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                '
+                    SELECT EXISTS(SELECT * FROM homework WHERE id = ?)
+                ',
+                array($homework_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function attachmentExists(int $intezmeny_id, int $attachment_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                '
+                    SELECT EXISTS(SELECT * FROM attachments WHERE id = ?)
+                ',
+                array($attachment_id)
+            )->fetch_all()[0][0] === 1;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createClass(int $intezmeny_id, string $name, int $headcount): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newClass(?, ?);',
+                array($name, $headcount)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createLesson(int $intezmeny_id, string $name): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newLesson(?);',
+                array($name)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createGroup(int $intezmeny_id, string $name, int $headcount, int|null $class_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newGroup_(?, ?, ?);',
+                array($name, $headcount, $class_id)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createRoom(int $intezmeny_id, string $name, string|null $type, int $space): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newRoom(?, ?, ?);',
+                array($name, $type, $space)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createTeacher(int $intezmeny_id, string $name, string $job, string|null $email, string|null $phone_number): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newTeacher(?, ?, ?, ?);',
+                array($name, $job, $email, $phone_number)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createTimetableElement(int $intezmeny_id, string $duration, int $day, string $from, string $until): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newTimetableElement(?, ?, ?, ?);',
+                array($duration, $day, $from, $until)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function createHomework(int $intezmeny_id, string|null $due, int|null $lesson_id, int|null $teacher_id): bool
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            return $this->connection->execute_query(
+                'CALL newHomework(?, ?, ?);',
+                array($due, $lesson_id, $teacher_id)
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns the new attachments id
+     */
+    function createAttachment(int $intezmeny_id, int $homework_id, string $file_name): int|false
+    {
+        try {
+            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
+            if ($ret === false) return false;
+            $ret = $this->connection->execute_query(
+                'CALL newAttachment(?, ?);',
+                array($homework_id, $file_name)
+            );
+            if ($ret === false) return false;
+            $ret = $this->connection->query("SELECT LAST_INSERT_ID();");
+            if ($ret === false) return false;
+            return (int) $ret->fetch_all()[0][0];
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    function getClasses(int $intezmeny_id): mysqli_result|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
@@ -295,7 +545,7 @@ class DB
         }
     }
 
-    function getGroups(int $intezmeny_id): mysqli_result|bool
+    function getGroups(int $intezmeny_id): mysqli_result|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
@@ -311,7 +561,7 @@ class DB
         }
     }
 
-    function getLessons(int $intezmeny_id): mysqli_result|bool
+    function getLessons(int $intezmeny_id): mysqli_result|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
@@ -322,7 +572,7 @@ class DB
         }
     }
 
-    function getRooms(int $intezmeny_id): mysqli_result|bool
+    function getRooms(int $intezmeny_id): mysqli_result|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
@@ -333,79 +583,85 @@ class DB
         }
     }
 
-    function getTeachers(int $intezmeny_id): mysqli_result|bool
+    function getTeachers(int $intezmeny_id): array|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
-            return $this->connection->query('
-                SELECT teacher.id, teacher.name, job, email, phone_number, lesson.id, lesson.name,
-                    teacher_availability.id, available_from_day, available_from_time, available_until_day, available_until_time
-                FROM teacher
-                LEFT JOIN teacher_lesson ON teacher_lesson.teacher_id = teacher.id
-                LEFT JOIN lesson ON teacher_lesson.lesson_id = lesson.id
-                LEFT JOIN teacher_availability ON teacher_availability.teacher_id = teacher.id
-                ;
-            ');
+            $ret = $this->connection->query("SELECT * FROM teacher;");
+            if ($ret === false) return false;
+            $teachers = $ret->fetch_all();
+            for ($i = 0; $i < count($teachers); $i++) {
+                $ret = $this->connection->execute_query(
+                    '
+                        SELECT * FROM teacher_lesson
+                        LEFT JOIN lesson ON lesson.id = teacher_lesson.lesson_id
+                        WHERE teacher_lesson.teacher_id = ?;
+                    ',
+                    array($teachers[$i][0])
+                );
+                if ($ret === false) return false;
+                array_push($teachers[$i], $ret->fetch_all());
+                $ret = $this->connection->execute_query(
+                    "SELECT * FROM teacher_availability WHERE teacher_id = ?;",
+                    array($teachers[$i][0])
+                );
+                if ($ret === false) return false;
+                array_push($teachers[$i], $ret->fetch_all());
+            }
+            return $teachers;
         } catch (Exception $e) {
             return false;
         }
     }
 
-    function getTimetable(int $intezmeny_id): mysqli_result|bool
+    function getTimetable(int $intezmeny_id): mysqli_result|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
-            return $this->connection->query("SELECT id, duration, group_id, lesson_id, teacher_id, room_id FROM timetable;");
+            return $this->connection->query("SELECT * FROM timetable;");
         } catch (Exception $e) {
             return false;
         }
     }
 
-    function getHomeworks(int $intezmeny_id): mysqli_result|bool
+    function getHomeworks(int $intezmeny_id): array|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
-            return $this->connection->query('
+            $ret = $this->connection->query('
                 SELECT homework.id, published, due, lesson.name, teacher.name
                 FROM homework
                 LEFT JOIN lesson ON lesson.id = lesson_id
                 LEFT JOIN teacher ON teacher.id = teacher_id;
             ');
+            if ($ret === false) return false;
+            $homeworks = $ret->fetch_all();
+            for ($i = 0; $i < count($homeworks); $i++) {
+                $ret = $this->connection->execute_query(
+                    "SELECT id, file_name FROM attachments WHERE homework_id = ?;",
+                    array($homeworks[$i][0])
+                );
+                if ($ret === false) return false;
+                array_push($homeworks[$i], $ret->fetch_all());
+            }
+            return $homeworks;
         } catch (Exception $e) {
             return false;
         }
     }
 
-    function homeworkExists(int $intezmeny_id, int $homework_id): bool
+    function getAttachmentName(int $intezmeny_id, int $attachment_id): string|false
     {
         try {
             $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
             if ($ret === false) return false;
             return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM attachments WHERE homework_id = ?)
-                ',
-                array($homework_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    function getAttachments(int $intezmeny_id, int $homework_id): mysqli_result|bool
-    {
-        try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                SELECT id, file_name FROM attachments WHERE homework_id = ?;
-            ',
-                array($homework_id)
-            );
+                "SELECT file_name FROM attachments WHERE id = ?;",
+                array($attachment_id)
+            )->fetch_all()[0][0];
         } catch (Exception $e) {
             return false;
         }
@@ -496,12 +752,12 @@ class DB
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) UNIQUE NOT NULL,
             room_type            VARCHAR(200),
-            space                INT UNSIGNED NOT NULL
+            space                SMALLINT UNSIGNED NOT NULL
          );
         
         CREATE OR REPLACE TABLE teacher ( 
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL,
+            name                 VARCHAR(200) NOT NULL,
             job                  VARCHAR(200) NOT NULL,
             email                VARCHAR(254),
             phone_number         VARCHAR(15)       
@@ -537,12 +793,15 @@ class DB
         ALTER TABLE teacher_availability MODIFY available_until_day TINYINT UNSIGNED NOT NULL COMMENT \'0 = monday, ... , 6 = sunday\';
         
         CREATE OR REPLACE TABLE timetable ( 
-            id                   INT UNSIGNED  NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            duration             TIME          NOT NULL,
-            group_id             INT UNSIGNED,
-            lesson_id            INT UNSIGNED,
-            teacher_id           INT UNSIGNED,
-            room_id              INT UNSIGNED,
+            id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            duration   TIME NOT NULL,
+            day        TINYINT UNSIGNED NOT NULL,
+            from_      DATE NOT NULL,
+            until      DATE NOT NULL,
+            group_id   INT UNSIGNED DEFAULT NULL,
+            lesson_id  INT UNSIGNED DEFAULT NULL,
+            teacher_id INT UNSIGNED DEFAULT NULL,
+            room_id    INT UNSIGNED DEFAULT NULL,
             CONSTRAINT fk_timetable_group_ FOREIGN KEY ( group_id ) REFERENCES group_( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
             CONSTRAINT fk_timetable_class FOREIGN KEY ( room_id ) REFERENCES room( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
             CONSTRAINT fk_timetable_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
@@ -570,7 +829,7 @@ class DB
         CREATE OR REPLACE TABLE attachments (
             id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             homework_id INT UNSIGNED NOT NULL,
-            file_name VARCHAR(255) NOT NULL,
+            file_name VARCHAR(200) NOT NULL,
             CONSTRAINT fk_attachment_homework FOREIGN KEY ( homework_id ) REFERENCES homework( id ) ON DELETE CASCADE ON UPDATE NO ACTION
         );
     ';
@@ -683,14 +942,14 @@ class DB
             DELETE FROM teacher_availability WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newTimetable ( IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE newTimetableElement ( IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE )
         BEGIN
-            INSERT INTO timetable (duration, group_id, lesson_id, teacher_id, room_id) VALUES (in_duration, in_group_id, in_lesson_id, in_teacher_id, in_room_id);
+            INSERT INTO timetable (duration, day, from_, until) VALUES (in_duration, in_day, in_from, in_until);
         END;
 
-        CREATE OR REPLACE PROCEDURE modTimetable ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE modTimetableElement ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
         BEGIN
-            UPDATE timetable SET duration=in_duration, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
+            UPDATE timetable SET duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
         END;
 
         CREATE OR REPLACE PROCEDURE delTimetable ( IN in_id INT UNSIGNED )
@@ -713,34 +972,19 @@ class DB
             DELETE FROM homework WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newAttachments ( IN in_file_name VARCHAR(255) )
+        CREATE OR REPLACE PROCEDURE newAttachment ( IN in_homework_id INT UNSIGNED, IN in_file_name VARCHAR(200) )
         BEGIN
-            INSERT INTO attachments (file_name) VALUES (in_file_name);
+            INSERT INTO attachments (homework_id, file_name) VALUES (in_homework_id, in_file_name);
         END;
 
-        CREATE OR REPLACE PROCEDURE modAttachments ( IN in_id INT UNSIGNED, IN in_file_name VARCHAR(255) )
+        CREATE OR REPLACE PROCEDURE modAttachment ( IN in_id INT UNSIGNED, IN in_file_name VARCHAR(200) )
         BEGIN
             UPDATE attachments SET file_name=in_file_name WHERE in_id=id;
         END;
 
-        CREATE OR REPLACE PROCEDURE delAttachments ( IN in_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE delAttachment ( IN in_id INT UNSIGNED )
         BEGIN
             DELETE FROM attachments WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newHomework_attachments ( IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO homework_attachments (homework_id, attachments_id) VALUES (in_homework_id, in_attachments_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modHomework_attachments ( IN in_id INT UNSIGNED, IN in_homework_id INT UNSIGNED, IN in_attachments_id INT UNSIGNED )
-        BEGIN
-            UPDATE homework_attachments SET homework_id=in_homework_id, attachments_id=in_attachments_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delHomework_attachments ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM homework_attachments WHERE id=in_id;
         END;
     ';
 }

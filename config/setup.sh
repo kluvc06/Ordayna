@@ -13,30 +13,30 @@ sudo apt-get install php-mysql -y
 sudo apt-get install 7zip -y
 sudo apt-get install composer -y
 
-sudo rm -f /etc/nginx/sites-available/filer
-sudo cp ./filer /etc/nginx/sites-available/
-sudo rm -f /etc/nginx/sites-enabled/filer
-sudo ln -s /etc/nginx/sites-available/filer /etc/nginx/sites-enabled/filer
-sudo rm -rf /var/www/filer
-sudo mkdir /var/www/filer
-sudo cp ../backend/* /var/www/filer/ -r
+sudo rm -f /etc/nginx/sites-available/ordayna
+sudo cp ./ordayna /etc/nginx/sites-available/
+sudo rm -f /etc/nginx/sites-enabled/ordayna
+sudo ln -s /etc/nginx/sites-available/ordayna /etc/nginx/sites-enabled/ordayna
+sudo rm -rf /var/www/ordayna
+sudo mkdir /var/www/ordayna
+sudo cp ../backend/* /var/www/ordayna/ -r
 
 orig_dir=$(pwd)
-cd /var/www/filer
+cd /var/www/ordayna
 sudo composer require lcobucci/jwt lcobucci/clock
 cd "$orig_dir"
 
 # Generate the random secret used for jwt hashing
-sudo openssl rand -out /var/www/filer/secret.key -base64 128
+sudo openssl rand -out /var/www/ordayna/secret.key -base64 128
 # Generate the certificate and secret used for https
-openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout filer.key -out filer.pem -config san.cnf
-sudo rm -f /etc/ssl/certs/filer.pem
-sudo mv filer.pem /etc/ssl/certs/
-sudo rm -f /etc/ssl/private/filer.key
-sudo mv filer.key /etc/ssl/private/
+openssl req -x509 -nodes -days 730 -newkey rsa:2048 -keyout ordayna.key -out ordayna.pem -config san.cnf
+sudo rm -f /etc/ssl/certs/ordayna.pem
+sudo mv ordayna.pem /etc/ssl/certs/
+sudo rm -f /etc/ssl/private/ordayna.key
+sudo mv ordayna.key /etc/ssl/private/
 
 # This is intentionally not recursive
-sudo chmod a+wr /var/www/filer/
+sudo chmod a+wr /var/www/ordayna/
 
 sudo mariadb -u root -e "source ../db/main_db.sql"
 sudo mariadb -u root -e "use ordayna_main_db;source ../db/main_db_procedures.sql;"
