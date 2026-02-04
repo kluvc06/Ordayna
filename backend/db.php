@@ -17,27 +17,6 @@ class DB
         $this->connection = mysqli_connect($databaseHost, $databaseUsername, $databasePassword, $databaseName);
     }
 
-    function getAllUsers(int $intezmeny_id): mysqli_result|bool
-    {
-        try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT display_name, email, phone_number FROM intezmeny_ids
-                    LEFT JOIN intezmeny_ids_users ON intezmeny_ids_id = intezmeny_ids.id
-                    LEFT JOIN users ON users_id = users.id
-
-                    WHERE intezmeny_ids.intezmeny_id = ?
-                    ;
-                ',
-                array($intezmeny_id),
-            );
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
     function getUserIdViaEmail(string $email): int|bool
     {
         try {
@@ -685,7 +664,7 @@ class DB
                 '
                     SET @admin_uid = ' . $admin_uid . ';
                     SET @intezmeny_id = (SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny);
-                    
+
                     -- This allows us to replace the database without encountering foreign key errors
                     SET FOREIGN_KEY_CHECKS = 0;
                     CREATE OR REPLACE DATABASE ordayna_intezmeny_' . $intezmeny_id . ' CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_uca1400_ai_ci";
@@ -693,7 +672,7 @@ class DB
 
                     INSERT INTO intezmeny (id, name) VALUE (@intezmeny_id, @intezmeny_name);
                     INSERT INTO intezmeny_users (intezmeny_id, users_id, is_admin) VALUE (@intezmeny_id, @admin_uid, true);
-                    
+
                     USE ordayna_intezmeny_' . $intezmeny_id . ';
                 ' . $this->intezmeny_tables . $this->intezmeny_procedures,
             );
@@ -728,56 +707,56 @@ class DB
     }
 
     private $intezmeny_tables = '
-        CREATE OR REPLACE TABLE class ( 
+        CREATE OR REPLACE TABLE class (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) UNIQUE NOT NULL,
             headcount            SMALLINT UNSIGNED NOT NULL
          );
-        
-        CREATE OR REPLACE TABLE group_ ( 
+
+        CREATE OR REPLACE TABLE group_ (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) UNIQUE NOT NULL,
             headcount            SMALLINT UNSIGNED NOT NULL,
             class_id             INT UNSIGNED,
             CONSTRAINT fk_group_class FOREIGN KEY ( class_id ) REFERENCES class( id ) ON DELETE SET NULL ON UPDATE NO ACTION
          );
-        
+
         CREATE OR REPLACE INDEX fk_group_class ON group_ ( class_id );
-        
-        CREATE OR REPLACE TABLE lesson ( 
+
+        CREATE OR REPLACE TABLE lesson (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL   
+            name                 VARCHAR(200) UNIQUE NOT NULL
          );
-        
-        CREATE OR REPLACE TABLE room ( 
+
+        CREATE OR REPLACE TABLE room (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) UNIQUE NOT NULL,
             room_type            VARCHAR(200),
             space                SMALLINT UNSIGNED NOT NULL
          );
-        
-        CREATE OR REPLACE TABLE teacher ( 
+
+        CREATE OR REPLACE TABLE teacher (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) NOT NULL,
             job                  VARCHAR(200) NOT NULL,
             email                VARCHAR(254),
-            phone_number         VARCHAR(15)       
+            phone_number         VARCHAR(15)
          );
-        
+
         CREATE OR REPLACE TABLE teacher_lesson (
           teacher_id INT UNSIGNED NOT NULL,
           lesson_id INT UNSIGNED NOT NULL,
           CONSTRAINT fk_lesson_teacher FOREIGN KEY (lesson_id) REFERENCES lesson (id) ON DELETE CASCADE ON UPDATE NO ACTION,
           CONSTRAINT fk_teacher_lesson FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE NO ACTION
         );
-        
+
         ALTER TABLE teacher MODIFY email VARCHAR(254) COMMENT \'The max length of a valid email address is technically 320 but you can\'\'t really use that due to the limit of the mailbox being 256 bytes (254 due to it always including a < and > bracket).
         https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address\';
-        
+
         ALTER TABLE teacher MODIFY phone_number VARCHAR(15) COMMENT \'The max length of a phone number is 15 digits (not including the "+" sign and any spaces):
         https://en.wikipedia.org/wiki/E.164\';
-        
-        CREATE OR REPLACE TABLE teacher_availability ( 
+
+        CREATE OR REPLACE TABLE teacher_availability (
             id                   INT UNSIGNED     NOT NULL AUTO_INCREMENT PRIMARY KEY,
             teacher_id           INT UNSIGNED     NOT NULL,
             available_from_day   TINYINT UNSIGNED NOT NULL,
@@ -786,14 +765,14 @@ class DB
             available_until_time TIME             NOT NULL,
             CONSTRAINT fk_teacher_availability FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE CASCADE ON UPDATE NO ACTION
          );
-        
+
         CREATE OR REPLACE INDEX fk_teacher_availability ON teacher_availability ( teacher_id );
-        
+
         ALTER TABLE teacher_availability MODIFY available_from_day TINYINT UNSIGNED NOT NULL COMMENT \'0 = monday, ... , 6 = sunday\';
-        
+
         ALTER TABLE teacher_availability MODIFY available_until_day TINYINT UNSIGNED NOT NULL COMMENT \'0 = monday, ... , 6 = sunday\';
-        
-        CREATE OR REPLACE TABLE timetable ( 
+
+        CREATE OR REPLACE TABLE timetable (
             id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             duration   TIME NOT NULL,
             day        TINYINT UNSIGNED NOT NULL,
@@ -808,15 +787,15 @@ class DB
             CONSTRAINT fk_timetable_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
             CONSTRAINT fk_timetable_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE SET NULL ON UPDATE NO ACTION
          );
-        
+
         CREATE OR REPLACE INDEX fk_timetable_group ON timetable ( group_id );
-        
+
         CREATE OR REPLACE INDEX fk_timetable_class ON timetable ( room_id );
-        
+
         CREATE OR REPLACE INDEX fk_timetable_lesson ON timetable ( lesson_id );
-        
+
         CREATE OR REPlACE INDEX fk_timetable_teacher ON timetable ( teacher_id );
-        
+
         CREATE OR REPLACE TABLE homework (
             id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             published     DATETIME     NOT NULL DEFAULT NOW(),
@@ -826,7 +805,7 @@ class DB
             CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE NO ACTION,
             CONSTRAINT fk_homework_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE SET NULL ON UPDATE NO ACTION
         );
-        
+
         CREATE OR REPLACE TABLE attachments (
             id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             homework_id INT UNSIGNED NOT NULL,
