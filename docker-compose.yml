@@ -1,9 +1,11 @@
 services:
   database:
     image: mariadb
+    # ports:
+      # - "3306:3306"
     restart: always
     environment:
-      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      # MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
       MARIADB_RANDOM_ROOT_PASSWORD: true
     volumes:
       - ./db:/db
@@ -11,6 +13,8 @@ services:
 
   backend:
     image: ordayna-backend
+    ports:
+      - "8000:8000"
     restart: always
     volumes:
       - ./backend:/backend
