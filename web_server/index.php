@@ -25,23 +25,7 @@ switch ($req_uri[1]) {
             http_response_code(405);
             break;
         }
-        include "../base/index.php";
-        http_response_code(200);
-        break;
-    case "login":
-        if ($_SERVER["REQUEST_METHOD"] != "GET") {
-            http_response_code(405);
-            break;
-        }
-        include "../base/login.php";
-        http_response_code(200);
-        break;
-    case "signup":
-        if ($_SERVER["REQUEST_METHOD"] != "GET") {
-            http_response_code(405);
-            break;
-        }
-        include "../base/signup.php";
+        include "resource/index.php";
         http_response_code(200);
         break;
     case "get_all_users":
