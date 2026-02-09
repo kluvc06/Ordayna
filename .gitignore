@@ -1,6 +1,6 @@
-backend/composer.json
-backend/composer.lock
-backend/vendor
-backend/secret.key
-backend/user_data
-backend/database_address
+web_server/composer.json
+web_server/composer.lock
+web_server/vendor
+web_server/secret.key
+web_server/user_data
+web_server/database_address
