@@ -748,7 +748,8 @@ class DB
           teacher_id INT UNSIGNED NOT NULL,
           lesson_id INT UNSIGNED NOT NULL,
           CONSTRAINT fk_lesson_teacher FOREIGN KEY (lesson_id) REFERENCES lesson (id) ON DELETE CASCADE ON UPDATE NO ACTION,
-          CONSTRAINT fk_teacher_lesson FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE NO ACTION
+          CONSTRAINT fk_teacher_lesson FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE NO ACTION,
+          PRIMARY KEY (teacher_id, lesson_id)
         );
 
         ALTER TABLE teacher MODIFY email VARCHAR(254) COMMENT \'The max length of a valid email address is technically 320 but you can\'\'t really use that due to the limit of the mailbox being 256 bytes (254 due to it always including a < and > bracket).

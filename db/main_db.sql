@@ -22,12 +22,12 @@ CREATE OR REPLACE TABLE users (
  );
 
 CREATE OR REPLACE TABLE intezmeny_users (
-	id           INT UNSIGNED                      NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	intezmeny_id INT UNSIGNED                      NOT NULL,
 	users_id     INT UNSIGNED                      NOT NULL,
 	role_        ENUM("student","teacher","admin") NOT NULL,
 	CONSTRAINT fk_intezmeny_users FOREIGN KEY ( intezmeny_id ) REFERENCES intezmeny( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
-	CONSTRAINT fk_intezmeny_users_users FOREIGN KEY ( users_id ) REFERENCES users( id ) ON DELETE CASCADE ON UPDATE NO ACTION
+	CONSTRAINT fk_intezmeny_users_users FOREIGN KEY ( users_id ) REFERENCES users( id ) ON DELETE CASCADE ON UPDATE NO ACTION,
+	PRIMARY KEY (intezmeny_id, users_id)
  );
 
 CREATE OR REPLACE TABLE revoked_refresh_tokens (

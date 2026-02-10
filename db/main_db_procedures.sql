@@ -21,3 +21,19 @@ BEGIN
 END;
 //
 DELIMITER ;
+
+DELIMITER //
+CREATE OR REPLACE PROCEDURE ordayna_main_db.isTeacher(IN in_users_id INT UNSIGNED, IN in_intezmeny_id INT UNSIGNED)
+BEGIN
+	SELECT COUNT(*) FROM intezmeny_users WHERE intezmeny_id=in_intezmeny_id AND users_id=in_users_id AND (role_="admin" OR role_="teacher");
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE OR REPLACE PROCEDURE ordayna_main_db.isAdmin(IN in_users_id INT UNSIGNED, IN in_intezmeny_id INT UNSIGNED)
+BEGIN
+	SELECT COUNT(*) FROM intezmeny_users WHERE intezmeny_id=in_intezmeny_id AND users_id=in_users_id AND role_="admin";
+END;
+//
+DELIMITER ;
