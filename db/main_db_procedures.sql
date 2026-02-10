@@ -17,7 +17,7 @@ BEGIN
 	LEFT JOIN intezmeny_users
 	ON intezmeny.id = intezmeny_users.intezmeny_id
 	GROUP BY intezmeny.id
-	HAVING COUNT(IF(is_admin=1,1,NULL))=0;
+	HAVING COUNT(IF(role_="admin",1,NULL))=0;
 END;
 //
 DELIMITER ;

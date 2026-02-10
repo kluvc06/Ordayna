@@ -740,7 +740,8 @@ class DB
             name                 VARCHAR(200) NOT NULL,
             job                  VARCHAR(200) NOT NULL,
             email                VARCHAR(254),
-            phone_number         VARCHAR(15)
+            phone_number         VARCHAR(15),
+            user_id              INT UNSIGNED
          );
 
         CREATE OR REPLACE TABLE teacher_lesson (
@@ -877,14 +878,14 @@ class DB
             DELETE FROM room WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )
+        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15), IN in_user_id INT UNSIGNED )
         BEGIN
-            INSERT INTO teacher (name, job, email, phone_number) VALUES (in_name, in_job, in_email, in_phone_number);
+            INSERT INTO teacher (name, job, email, phone_number, user_id) VALUES (in_name, in_job, in_email, in_phone_number, in_user_id);
         END;
 
-        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15) )
+        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15), in_user_id INT UNSIGNED )
         BEGIN
-            UPDATE teacher SET name=in_name, job=in_job, email=in_email, phone_number=in_phone_number WHERE in_id=id;
+            UPDATE teacher SET name=in_name, job=in_job, email=in_email, phone_number=in_phone_number, user_id=in_user_id WHERE in_id=id;
         END;
 
         CREATE OR REPLACE PROCEDURE delTeacher ( IN in_id INT UNSIGNED )
