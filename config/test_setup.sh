@@ -1,14 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-sudo apt-get update
-
 # 7zip or unzip or git is required for composer to work but non of them are a dependancy for some reason
-sudo apt-get install mariadb-server php-mysql 7zip composer -y
+sudo apt-get install --update mariadb-server php-mysql 7zip composer -y
 
 orig_dir=$(pwd)
 cd ../web_server
-sudo composer require lcobucci/jwt lcobucci/clock
+composer require lcobucci/jwt lcobucci/clock
 printf "localhost" > "database_address"
 cd "$orig_dir"
 

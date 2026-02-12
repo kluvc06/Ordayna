@@ -138,10 +138,13 @@ test_count = 0
 tests_passed = 0
 refresh_jar = dict()
 access_jar = dict()
-wrong_access_jar = dict()
 wrong_refresh_jar = dict()
 reuse_refresh_jar = dict()
+wrong_access_jar = dict()
 intezmeny_id = 0
+teacher_uid = 0
+teacher_refresh_jar = dict()
+teacher_access_jar = dict()
 URL = "http://127.0.0.1:8000"
 
 def main():
@@ -152,6 +155,7 @@ def main():
     tokens()
     changeUserData()
     createIntezmeny()
+    inviteEndpoints()
     intezmenyCreateEndpoints()
     intezmenyGetEndpoints()
     intezmenyDeleteEndpoints()
@@ -173,7 +177,7 @@ def createUser():
     testEndpoint("Create user", "POST", "/user/create_user", "",
                  {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
     testEndpoint("Create user, user already exists", "POST", "/user/create_user", "",
-                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 400, "User already exists")
+                 {"disp_name": "tester", "email": "tester@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 400, "Already exists")
 
 
 def tokens():
@@ -257,10 +261,46 @@ def createIntezmeny():
                  {}, 405, "")
 
 
+def inviteEndpoints():
+    global teacher_access_jar
+    global teacher_refresh_jar
+    global teacher_uid
+    global access_jar
+    global wrong_access_jar
+    global intezmeny_id
+
+    testEndpoint("Create teacher user", "POST", "/user/create_user", {},
+                 {"disp_name": "tester", "email": "tester_teacher@test.com", "phone_number": "123456789012345", "pass": "tester_pass"}, 201, "")
+    teacher_refresh_jar = testEndpoint("Get teacher refresh token", "POST", "/token/get_refresh_token", {},
+                 {"email": "tester_teacher@test.com", "pass": "tester_pass"}, 200, "").cookies
+    teacher_access_jar = testEndpoint("Get teacher access token", "GET", "/token/get_access_token", teacher_refresh_jar, {}, 200, "").cookies
+
+    testId("Invite user", "POST", "/intezmeny/user/invite", {"email": "tester_teacher@test.com"}, access_jar, "intezmeny_id")
+    testEmail("Invite user", "POST", "/intezmeny/user/invite", {"intezmeny_id": f"{intezmeny_id}"}, access_jar, False)
+    testToken("Invite user", "POST", "/intezmeny/user/invite", {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, wrong_access_jar)
+    testEndpoint("Invite user, method is not POST", "PATCH", "/intezmeny/user/invite", access_jar,
+                 {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 405, "")
+    testEndpoint("Invite user", "POST", "/intezmeny/user/invite", access_jar, {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 200, "")
+    testEndpoint("Invite user, already invited", "POST", "/intezmeny/user/invite", access_jar, {"intezmeny_id": f"{intezmeny_id}", "email": "tester_teacher@test.com"}, 400, "Already exists")
+
+    testId("Accept invite", "POST", "/intezmeny/user/accept_invite", {}, teacher_access_jar, "intezmeny_id")
+    testToken("Accept invite", "POST", "/intezmeny/user/accept_invite", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
+    testEndpoint("Accept invite, method is not POST", "PATCH", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
+    testEndpoint("Accept invite", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200, "")
+    testEndpoint("Accept invite, already accepted", "POST", "/intezmeny/user/accept_invite", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 403, "Unauthorised")
+
+    testToken("Get profile", "GET", "/user/profile", {}, wrong_access_jar)
+    testEndpoint("Get profile, method is not GET", "PATCH", "/user/profile", teacher_access_jar, {}, 405, "")
+    response = testEndpointNoErrorHandling("GET", "/user/profile", teacher_access_jar, {})
+    handleApiError("Get profile", response, 200, f"[{response.json()[0]},\"tester\",\"tester_teacher@test.com\",\"123456789012345\"]")
+    teacher_uid = response.json()[0]
+
+
 def intezmenyCreateEndpoints():
     global access_jar
     global wrong_access_jar
     global intezmeny_id
+    global teacher_uid
 
     testId("Create class", "POST", "/intezmeny/create/class", {"name": "test_class", "headcount": "30"}, access_jar, "intezmeny_id")
     testString("Create class", "POST", "/intezmeny/create/class", {"intezmeny_id": f"{intezmeny_id}", "headcount": "30"}, access_jar, "name", False)
@@ -312,26 +352,29 @@ def intezmenyCreateEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}", "type": "test", "name": "test_room", "space": "30"}, 400, "Bad request")
 
     testId("Create teacher", "POST", "/intezmeny/create/teacher",
-           {"name": "test_teacher", "job": "test", "email": "tester@test.com", "phone_number": "12345"}, access_jar, "intezmeny_id")
+           {"name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
+           access_jar, "intezmeny_id")
     testString("Create teacher", "POST", "/intezmeny/create/teacher",
-               {"intezmeny_id": f"{intezmeny_id}", "job": "test", "email": "tester@test.com", "phone_number": "12345"}, access_jar, "name", False)
+               {"intezmeny_id": f"{intezmeny_id}", "job": "test", "teacher_uid": f"{teacher_uid}"},
+               access_jar, "name", False)
     testString("Create teacher", "POST", "/intezmeny/create/teacher",
-               {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "email": "tester@test.com", "phone_number": "12345"}, access_jar, "job", False)
-    testEmail("Create teacher", "POST", "/intezmeny/create/teacher",
-               {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher_no_email", "job": "test", "phone_number": "12345"}, access_jar, True)
-    testPhoneNumber("Create teacher", "POST", "/intezmeny/create/teacher",
-                    {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher_no_phone", "job": "test", "email": "tester@test.com"}, access_jar, "phone_number", True)
+               {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "teacher_uid": f"{teacher_uid}"},
+               access_jar, "job", False)
+    testId("Create teacher", "POST", "/intezmeny/create/teacher",
+           {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher_no_user", "job": "test"},
+           access_jar, "teacher_uid", True, 201, True)
     testToken("Create teacher", "POST", "/intezmeny/create/teacher",
-              {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "email": "tester@test.com", "phone_number": "12345"}, wrong_access_jar)
+              {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
+              wrong_access_jar)
     testEndpoint("Create teacher, method not POST", "PATCH", "/intezmeny/create/teacher", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "email": "tester@test.com", "phone_number": "12345"},
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
                  405, "")
     testEndpoint("Create teacher", "POST", "/intezmeny/create/teacher", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "email": "tester@test.com", "phone_number": "12345"},
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
                  201, "")
-    testEndpoint("Create teacher, teacher already exists", "POST", "/intezmeny/create/teacher", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "email": "tester@test.com", "phone_number": "12345"},
-                 201, "")
+    testEndpoint("Create teacher, user already assigned as teacher", "POST", "/intezmeny/create/teacher", access_jar,
+                 {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
+                 400, "Bad request")
 
 
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
@@ -418,7 +461,7 @@ def intezmenyGetEndpoints():
     global intezmeny_id
 
     testEndpoint("Get classes", "POST", "/intezmeny/get/classes", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_class","30"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_class"]]')
     testId("Get classes", "POST", "/intezmeny/get/classes", {}, access_jar, "intezmeny_id")
     testToken("Get classes", "POST", "/intezmeny/get/classes", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get classes, method not POST", "PATCH", "/intezmeny/get/classes", access_jar,
@@ -432,7 +475,7 @@ def intezmenyGetEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get groups", "POST", "/intezmeny/get/groups", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_group_no_class_id","30",null,null,null],["2","test_group","30","1","test_class","30"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_class","30","1","test_class"],["2","test_group_no_class_id","30",null,null],["3","test_group","30","1","test_class"]]')
     testId("Get groups", "POST", "/intezmeny/get/groups", {}, access_jar, "intezmeny_id")
     testToken("Get groups", "POST", "/intezmeny/get/groups", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get groups, method not POST", "PATCH", "/intezmeny/get/groups", access_jar,
@@ -446,7 +489,7 @@ def intezmenyGetEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get teachers", "POST", "/intezmeny/get/teachers", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_teacher_no_email","test",null,"12345",[],[]],["2","test_teacher_no_phone","test","tester@test.com",null,[],[]],["3","test_teacher","test","tester@test.com","12345",[],[]],["4","test_teacher","test","tester@test.com","12345",[],[]]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, f'[["1","test_teacher_no_user","test",null,[],[]],["2","test_teacher","test",\"{teacher_uid}\",[],[]]]')
     testId("Get teachers", "POST", "/intezmeny/get/teachers", {}, access_jar, "intezmeny_id")
     testToken("Get teachers", "POST", "/intezmeny/get/teachers", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get teachers, method not POST", "PATCH", "/intezmeny/get/teachers", access_jar,
@@ -461,7 +504,7 @@ def intezmenyGetEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     response = testEndpointNoErrorHandling("POST", "/intezmeny/get/homeworks", access_jar, {"intezmeny_id": f"{intezmeny_id}"})
-    handleApiError("Get homeworks", response, 200, '[["1","' + f"{response.json()[0][1]}" + '","2020-12-24 02:02:02","test_lesson","test_teacher_no_email",[[1,"test_file"],[2,"test_file"],[3,"test_file"]]],["2","' + f"{response.json()[1][1]}" + '","2020-12-24 02:02:02","test_lesson","test_teacher_no_email",[]],["3","' + f"{response.json()[2][1]}" + '",null,"test_lesson","test_teacher_no_email",[]],["4","' + f"{response.json()[3][1]}" + '","2020-12-24 02:02:02",null,"test_teacher_no_email",[]],["5","' + f"{response.json()[4][1]}" + '","2020-12-24 02:02:02","test_lesson",null,[]]]')
+    handleApiError("Get homeworks", response, 200, f'[["1","{response.json()[0][1]}","2020-12-24 02:02:02","test_lesson","test_teacher_no_user",[[1,"test_file"],[2,"test_file"],[3,"test_file"]]],["2","{response.json()[1][1]}","2020-12-24 02:02:02","test_lesson","test_teacher_no_user",[]],["3","{response.json()[2][1]}",null,"test_lesson","test_teacher_no_user",[]],["4","{response.json()[3][1]}","2020-12-24 02:02:02",null,"test_teacher_no_user",[]],["5","{response.json()[4][1]}","2020-12-24 02:02:02","test_lesson",null,[]]]')
     testId("Get homeworks", "POST", "/intezmeny/get/homeworks", {}, access_jar, "intezmeny_id")
     testToken("Get homeworks", "POST", "/intezmeny/get/homeworks", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get homeworks, method not POST", "PATCH", "/intezmeny/get/homeworks", access_jar,
@@ -540,12 +583,10 @@ def deleteIntezmeny():
     global wrong_access_jar
     global intezmeny_id
 
-    testEndpoint("Delete intezmeny", "DELETE", "/delete_intezmeny", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 204, "")
+    testEndpoint("Delete intezmeny", "DELETE", "/delete_intezmeny", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 204, "")
     testId("Delete intezmeny", "DELETE", "/delete_intezmeny", {}, access_jar, "intezmeny_id")
     testToken("Delete intezmeny", "DELETE", "/delete_intezmeny", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
-    testEndpoint("Delete intezmeny, method is not DELETE", "PATCH", "/delete_intezmeny", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
+    testEndpoint("Delete intezmeny, method is not DELETE", "PATCH", "/delete_intezmeny", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
 
 def deleteUser():
@@ -559,13 +600,16 @@ def deleteUser():
 
 
 def cleanup():
+    global teacher_access_jar
+
     no_phone_refresh_jar = dict()
     no_phone_access_jar = dict()
-    
+
     no_phone_refresh_jar = testEndpoint("Get refresh token for no phone user", "POST", "/token/get_refresh_token", "",
                                         {"email": "tester_no_phone@test.com", "pass": "tester_pass"}, 200, "").cookies
     no_phone_access_jar = testEndpoint("Get access token for no phone user", "GET", "/token/get_access_token", no_phone_refresh_jar, {}, 200, "").cookies
     testEndpoint("Delete no phone number user", "DELETE", "/user/delete_user", no_phone_access_jar, {}, 204, "")
+    testEndpoint("Delete teacher user", "DELETE", "/user/delete_user", teacher_access_jar, {}, 204, "")
 
 
 main()
