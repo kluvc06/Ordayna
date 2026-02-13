@@ -4,3 +4,4 @@ web_server/vendor
 web_server/secret.key
 web_server/user_data
 web_server/database_address
+web_server/error_logs.txt

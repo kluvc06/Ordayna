@@ -36,7 +36,7 @@ class JWT
         $this->algorithm    = new Sha256();
         try {
             $this->key = InMemory::file('./secret.key');
-        } catch (Exception $e) {
+        } catch (Exception) {
             fwrite(STDOUT, "Failed to open secrets file\n");
         }
     }
@@ -96,7 +96,7 @@ class JWT
     /**
      * Returns false on invalid token and true on valid token
      */
-    function validateRefreshToken(UnencryptedToken $token, array $invalid_ids): bool
+    function validateRefreshToken(UnencryptedToken $token): bool
     {
         $validator = new Validator();
 
@@ -118,12 +118,6 @@ class JWT
         }
         if (!$validator->validate($token, new HasClaim("uid"))) {
             return false;
-        }
-
-        for ($i = 0; $i < count($invalid_ids); $i++) {
-            if ($validator->validate($token, new IdentifiedBy($invalid_ids[$i]))) {
-                return false;
-            }
         }
 
         return true;
@@ -165,7 +159,7 @@ class JWT
 
         try {
             $token = $parser->parse($token_str);
-        } catch (CannotDecodeContent | InvalidTokenStructure | UnsupportedHeaderFound $e) {
+        } catch (CannotDecodeContent | InvalidTokenStructure | UnsupportedHeaderFound) {
             return null;
         }
         assert($token instanceof UnencryptedToken);

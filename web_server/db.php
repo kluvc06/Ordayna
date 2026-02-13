@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+include "term.php";
+
 class DB
 {
     private $connection = null;
@@ -17,650 +19,851 @@ class DB
         $this->connection = mysqli_connect($databaseHost, $databaseUsername, $databasePassword, $databaseName);
     }
 
-    function getUserIdViaEmail(string $email): int|bool
+    /** Returns first results contents as 2d array or null if $cur_result is null */
+    private function freeRemainingResults(mysqli_result|null $cur_result): array|null
     {
-        try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT id FROM users WHERE email = ?;
-                ',
-                array($email),
-            )->fetch_all()[0][0];
-        } catch (Exception $e) {
-            return false;
+        $arr = null;
+        if ($cur_result !== null) {
+            $arr = $cur_result->fetch_all();
+            $cur_result->free_result();
         }
+        while ($this->connection->next_result() !== false) {
+            if ($this->connection->errno !== 0) return null;
+            $next = $this->connection->store_result();
+            if ($next !== false) $next->free_result();
+        }
+        return $arr;
     }
 
-    function getUserPassViaEmail(string $email): string|bool
+    /**
+     * Return $ret_value
+     * Only logs error if $ret_value === false
+     */
+    private function logError(mysqli_result|bool $ret_value): mysqli_result|bool|null
     {
-        try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT password_hash FROM users WHERE email = ?;
-                ',
-                array($email),
-            )->fetch_all()[0][0];
-        } catch (Exception $e) {
-            return false;
+        if ($ret_value === false) {
+            $ret = file_put_contents(
+                "error_logs.txt",
+                date("Y-m-d H:i:s T", time()) . ": " . $this->connection->error . "\n",
+                FILE_APPEND | LOCK_EX
+            );
+            if ($ret === false) fwrite(STDOUT, "Failed to write logs to \"error_logs.txt\" file\n");
+            return null;
         }
+        return $ret_value;
     }
 
-    function userExistsEmail(string $email): bool
+    /** Frees all results but only returns the first */
+    private function handleQueryResult(mysqli_result|bool $ret): array|bool|null
+    {
+        if ($ret === false) {
+            $this->freeRemainingResults(null);
+            return $this->logError(false);
+        }
+        if ($ret === true) {
+            $this->freeRemainingResults(null);
+            return true;
+        }
+        return $this->freeRemainingResults($ret);
+    }
+
+    function getUserIdViaEmail(string $email): int|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM users WHERE email = ?)
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            $ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT id FROM users WHERE email = ?',
                 array($email)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ));
+            return $ret === null ? null : $ret[0][0];
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function userExistsViaId(int $uid): bool
+    function getUserPassViaEmail(string $email): string|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM users WHERE id = ?)
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT password_hash FROM users WHERE email = ?',
+                array($email)
+            ))) === null ? null : $ret[0][0];
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function userExistsViaEmail(string $email): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM users WHERE email = ?)',
+                array($email)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function userExists(int $uid): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM users WHERE id = ?)',
                 array($uid)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Assumes the user doesn't exist
-     * Returns true on success and false on error
-     */
-    function createUser(string $display_name, string $email, string|null $phone_number, string $password_hash): bool
+    function createUser(string $display_name, string $email, string|null $phone_number, string $password_hash): true|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    INSERT INTO ordayna_main_db.users (display_name, email, phone_number, password_hash) VALUE (?,?,?,?);
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'INSERT INTO ordayna_main_db.users (display_name, email, phone_number, password_hash) VALUE (?,?,?,?)',
                 array($display_name, $email, $phone_number, $password_hash)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Assumes the user exists
-     * Returns true on success and false on error
-     */
-    function deleteUserViaId(int $uid): bool
+    function getProfile(int $uid): array|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    DELETE FROM users WHERE id = ?;
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT id, display_name, email, phone_number FROM users WHERE id = ?',
+                array($uid)
+            ))) === null ? null : $ret[0];
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function deleteUserViaId(int $uid): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'DELETE FROM users WHERE id = ?',
                 array($uid),
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Assumes the user exists
-     * Returns true on success and false on error
-     */
-    function changeDisplayNameViaId(int $uid, string $new_disp_name): bool
+    function changeDisplayNameViaId(int $uid, string $new_disp_name): true|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    UPDATE users SET display_name = ? WHERE id = ?;
-                ',
-                array($new_disp_name, $uid),
-            );
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE users SET display_name = ? WHERE id = ?',
+                array($new_disp_name, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Assumes the user exists
-     * Returns true on success and false on error
-     */
-    function changePhoneNumberViaId(int $uid, string $new_phone_number): bool
+    function changePhoneNumberViaId(int $uid, string $new_phone_number): true|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    UPDATE users SET phone_number = ? WHERE id = ?;
-                ',
-                array($new_phone_number, $uid),
-            );
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE users SET phone_number = ? WHERE id = ?',
+                array($new_phone_number, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Assumes the user exists
-     * Returns true on success and false on error
-     */
-    function changePasswordHashViaId(int $uid, string $new_pass_hash): bool
+    function changePasswordHashViaId(int $uid, string $new_pass_hash): true|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    UPDATE users SET password_hash = ? WHERE id = ?;
-                ',
-                array($new_pass_hash, $uid),
-            );
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE users SET password_hash = ? WHERE id = ?',
+                array($new_pass_hash, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getRevokedRefreshTokens(): array|bool
+    function isRevokedRefreshToken(int $uid, string $token_uuid): bool|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            $res = $this->connection->execute_query(
-                '
-                    SELECT uuid FROM revoked_refresh_tokens;
-                '
-            )->fetch_all();
-
-            $ret_arr = array();
-            for ($i = 0; $i < count($res); $i++) {
-                array_push($ret_arr, $res[$i][0]);
-            }
-
-            return $ret_arr;
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS (SELECT * FROM revoked_refresh_tokens WHERE uid = ? AND token_uuid = ?)',
+                array($uid, $token_uuid)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    /**
-     * Returns true on success and false on error
-     */
-    function newInvalidRefreshToken(string $uuid, string $expires_after): bool
+    function newInvalidRefreshToken(int $uid, string $token_uuid, string $expires_after): true|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    INSERT INTO revoked_refresh_tokens (uuid, duration) VALUE (?, ?);
-                ',
-                array($uuid, $expires_after)
-            );
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'INSERT INTO revoked_refresh_tokens (uid, token_uuid, duration) VALUE (?, ?, ?)',
+                array($uid, $token_uuid, $expires_after)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function partOfIntezmeny(int $uid, int $intezmeny_id): bool
+    function partOfIntezmeny(int $intezmeny_id, int $uid, bool $invite_must_be_accepted): bool|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
                 '
                     SELECT EXISTS(
-                        SELECT * FROM users
-                        INNER JOIN intezmeny_users ON intezmeny_users.users_id = users.id
-                        INNER JOIN intezmeny ON intezmeny_users.intezmeny_id = intezmeny.id
-                        WHERE users.id = ? AND intezmeny.id = ?
-                    );
+                        SELECT * FROM intezmeny_users
+                        WHERE intezmeny_id = ? AND users_id = ?' . ($invite_must_be_accepted === true ? ' AND invite_accepted = TRUE' : '') . '
+                    )
                 ',
-                array($uid, $intezmeny_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+                array($intezmeny_id, $uid)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getIntezmenys(int $uid): mysqli_result|bool
+    function isTeacher(int $intezmeny_id, int $uid): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_main_db');
-            if ($ret === false) return false;
-            // return $this->connection->query("SELECT name FROM lesson;");
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'CALL isTeacher(?, ?)',
+                array($uid, $intezmeny_id)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function isAdmin(int $intezmeny_id, int $uid): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'CALL isAdmin(?, ?)',
+                array($uid, $intezmeny_id)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getIntezmenys(int $uid): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
                 '
                     SELECT intezmeny.id, intezmeny.name FROM users
                     INNER JOIN intezmeny_users ON intezmeny_users.users_id = users.id
                     INNER JOIN intezmeny ON intezmeny_users.intezmeny_id = intezmeny.id
-                    WHERE users.id = ?;
+                    WHERE users.id = ?
                 ',
                 array($uid)
-            );
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function classExists(int $intezmeny_id, int $class_id): bool
+    function classExists(int $intezmeny_id, int $class_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM class WHERE id = ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM class WHERE id = ?)',
                 array($class_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function classExistsViaName(int $intezmeny_id, string $class_name): bool
+    function classExistsViaName(int $intezmeny_id, string $class_name): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM class WHERE name = ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM class WHERE name = ?)',
                 array($class_name)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function lessonExists(int $intezmeny_id, int $lesson_id): bool
+    function lessonExists(int $intezmeny_id, int $lesson_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM lesson WHERE id = ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM lesson WHERE id = ?)',
                 array($lesson_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function lessonExistsViaName(int $intezmeny_id, string $lesson_name): bool
+    function lessonExistsViaName(int $intezmeny_id, string $lesson_name): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
                 'SELECT EXISTS(SELECT * FROM lesson WHERE name = ?);',
                 array($lesson_name)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function groupExistsViaName(int $intezmeny_id, string $group_name): bool
+    function groupExists(int $intezmeny_id, int $group_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM group_ WHERE name = ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM group_ WHERE id = ?)',
+                array($group_id)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function groupExistsViaName(int $intezmeny_id, string $group_name): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM group_ WHERE name = ?)',
                 array($group_name)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function roomExistsViaName(int $intezmeny_id, string $room_name): bool
+    function roomExists(int $intezmeny_id, int $room_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM room WHERE name = ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM room WHERE id = ?)',
+                array($room_id)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function roomExistsViaName(int $intezmeny_id, string $room_name): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM room WHERE name = ?)',
                 array($room_name)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function teacherExists(int $intezmeny_id, int $teacher_id): bool
+    function teacherExists(int $intezmeny_id, int $teacher_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM teacher WHERE id = ?)
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM teacher WHERE id = ?)',
                 array($teacher_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function homeworkExists(int $intezmeny_id, int $homework_id): bool
+    function timetableElementExists(int $intezmeny_id, int $timetable_element_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM homework WHERE id = ?)
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM timetable WHERE id = ?)',
+                array($timetable_element_id)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function homeworkExists(int $intezmeny_id, int $homework_id): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM homework WHERE id = ?)',
                 array($homework_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function attachmentExists(int $intezmeny_id, int $attachment_id): bool
+    function attachmentExists(int $intezmeny_id, int $attachment_id): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                '
-                    SELECT EXISTS(SELECT * FROM attachments WHERE id = ?)
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS(SELECT * FROM attachments WHERE id = ?)',
                 array($attachment_id)
-            )->fetch_all()[0][0] === 1;
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createClass(int $intezmeny_id, string $name, int $headcount): bool
+    function inviteUser(int $intezmeny_id, int $uid): bool|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'INSERT INTO intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (? ,?, "student", FALSE)',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    /** Only returns true if the invite exists and is accepted */
+    function isInviteAccepted(int $intezmeny_id, int $uid): bool|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT EXISTS (SELECT * FROM intezmeny_users WHERE intezmeny_id = ? AND users_id = ? AND invite_accepted = TRUE)',
+                array($intezmeny_id, $uid)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function acceptInvite(int $intezmeny_id, int $uid): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE intezmeny_users SET invite_accepted=TRUE WHERE intezmeny_id = ? AND users_id = ?;',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function createClass(int $intezmeny_id, string $name, int $headcount): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
                 'CALL newClass(?, ?);',
                 array($name, $headcount)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createLesson(int $intezmeny_id, string $name): bool
+    function createLesson(int $intezmeny_id, string $name): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
                 'CALL newLesson(?);',
                 array($name)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createGroup(int $intezmeny_id, string $name, int $headcount, int|null $class_id): bool
+    function createGroup(int $intezmeny_id, string $name, int $headcount, int|null $class_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'CALL newGroup_(?, ?, ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL newGroup(?, ?, ?);',
                 array($name, $headcount, $class_id)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createRoom(int $intezmeny_id, string $name, string|null $type, int $space): bool
+    function createRoom(int $intezmeny_id, string $name, string|null $type, int $space): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
                 'CALL newRoom(?, ?, ?);',
                 array($name, $type, $space)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createTeacher(int $intezmeny_id, string $name, string $job, string|null $email, string|null $phone_number): bool
+    function createTeacher(int $intezmeny_id, string $name, string $job, int|null $uid): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'CALL newTeacher(?, ?, ?, ?);',
-                array($name, $job, $email, $phone_number)
-            );
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            if ($this->handleQueryResult($this->connection->execute_query(
+                'CALL newTeacher(?, ?, ?)',
+                array($name, $job, $uid)
+            )) === null) return null;
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'UPDATE intezmeny_users SET role_="teacher" WHERE intezmeny_id = ? AND users_id = ?;',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createTimetableElement(int $intezmeny_id, string $duration, int $day, string $from, string $until): bool
+    function createTimetableElement(int $intezmeny_id, string $duration, int $day, string $from, string $until): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'CALL newTimetableElement(?, ?, ?, ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL newTimetableElement(?, ?, ?, ?)',
                 array($duration, $day, $from, $until)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createHomework(int $intezmeny_id, string|null $due, int|null $lesson_id, int|null $teacher_id): bool
+    function createHomework(int $intezmeny_id, string|null $due, int|null $lesson_id, int|null $teacher_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                'CALL newHomework(?, ?, ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL newHomework(?, ?, ?)',
                 array($due, $lesson_id, $teacher_id)
-            );
-        } catch (Exception $e) {
-            return false;
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
     /**
      * Returns the new attachments id
      */
-    function createAttachment(int $intezmeny_id, int $homework_id, string $file_name): int|false
+    function createAttachment(int $intezmeny_id, int $homework_id, string $file_name): int|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            $ret = $this->connection->execute_query(
-                'CALL newAttachment(?, ?);',
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            if ($this->handleQueryResult($this->connection->execute_query(
+                'CALL newAttachment(?, ?)',
                 array($homework_id, $file_name)
-            );
-            if ($ret === false) return false;
-            $ret = $this->connection->query("SELECT LAST_INSERT_ID();");
-            if ($ret === false) return false;
-            return (int) $ret->fetch_all()[0][0];
-        } catch (Exception $e) {
-            return false;
+            )) === null) return null;
+            return ($ret = $this->handleQueryResult(
+                $this->connection->query("SELECT LAST_INSERT_ID()")
+            )) === null ? null : (int) $ret[0][0];
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getClasses(int $intezmeny_id): mysqli_result|false
+    function deleteClass(int $intezmeny_id, int $class_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->query("SELECT id, name, headcount FROM class;");
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delClass(?)',
+                array($class_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getGroups(int $intezmeny_id): mysqli_result|false
+    function deleteLesson(int $intezmeny_id, int $lesson_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->query('
-                SELECT group_.id, group_.name, group_.headcount, class.id, class.name, class.headcount
-                FROM group_
-                LEFT JOIN class ON group_.class_id = class.id
-                ;
-            ');
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delLesson(?)',
+                array($lesson_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getLessons(int $intezmeny_id): mysqli_result|false
+    function deleteGroup(int $intezmeny_id, int $group_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->query("SELECT id, name FROM lesson;");
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delGroup(?)',
+                array($group_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getRooms(int $intezmeny_id): mysqli_result|false
+    function deleteRoom(int $intezmeny_id, int $room_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->query("SELECT id, name, room_type, space FROM room;");
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delRoom(?)',
+                array($room_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getTeachers(int $intezmeny_id): array|false
+    function deleteTeacher(int $intezmeny_id, int $teacher_id): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            $ret = $this->connection->query("SELECT * FROM teacher;");
-            if ($ret === false) return false;
-            $teachers = $ret->fetch_all();
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            $ret = $this->handleQueryResult($this->connection->execute_query('SELECT user_id FROM teacher WHERE id = ?', array($teacher_id)));
+            if ($ret === null) return null;
+            $teacher_uid = $ret[0][0];
+
+            if ($teacher_uid !== null) {
+                if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+                if ($this->handleQueryResult($this->connection->execute_query(
+                    'UPDATE intezmeny_users SET role_ = "student" WHERE intezmeny_id = ? and users_id = ?',
+                    array($intezmeny_id, $teacher_uid)
+                )) === null) return null;
+                if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            }
+
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delTeacher(?)',
+                array($teacher_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function deleteTimetableElement(int $intezmeny_id, int $timetable_element_id): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delTimetableElement(?)',
+                array($timetable_element_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function deleteHomework(int $intezmeny_id, int $homework_id): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delHomework(?)',
+                array($homework_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function deleteAttachment(int $intezmeny_id, int $attachment_id): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->execute_query(
+                'CALL delAttachment(?)',
+                array($attachment_id)
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getClasses(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->query("SELECT id, name FROM class"));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getGroups(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->query(
+                '
+                    SELECT group_.id, group_.name, group_.headcount, class.id, class.name
+                    FROM group_ LEFT JOIN class ON group_.class_id = class.id
+                '
+            ));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getLessons(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->query("SELECT id, name FROM lesson"));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getRooms(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->query("SELECT id, name, room_type, space FROM room"));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getTeachers(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            $ret = $this->handleQueryResult($this->connection->query("SELECT * FROM teacher"));
+            if ($ret === null) return null;
+            $teachers = $ret;
             for ($i = 0; $i < count($teachers); $i++) {
-                $ret = $this->connection->execute_query(
+                $ret = $this->handleQueryResult($this->connection->execute_query(
                     '
                         SELECT * FROM teacher_lesson
                         LEFT JOIN lesson ON lesson.id = teacher_lesson.lesson_id
-                        WHERE teacher_lesson.teacher_id = ?;
+                        WHERE teacher_lesson.teacher_id = ?
                     ',
                     array($teachers[$i][0])
-                );
-                if ($ret === false) return false;
-                array_push($teachers[$i], $ret->fetch_all());
-                $ret = $this->connection->execute_query(
-                    "SELECT * FROM teacher_availability WHERE teacher_id = ?;",
+                ));
+                if ($ret === null) return null;
+                array_push($teachers[$i], $ret);
+                $ret = $this->handleQueryResult($this->connection->execute_query(
+                    "SELECT * FROM teacher_availability WHERE teacher_id = ?",
                     array($teachers[$i][0])
-                );
-                if ($ret === false) return false;
-                array_push($teachers[$i], $ret->fetch_all());
+                ));
+                if ($ret === null) return null;
+                array_push($teachers[$i], $ret);
             }
             return $teachers;
-        } catch (Exception $e) {
-            return false;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getTimetable(int $intezmeny_id): mysqli_result|false
+    function getTimetable(int $intezmeny_id): array|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->query("SELECT * FROM timetable;");
-        } catch (Exception $e) {
-            return false;
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return $this->handleQueryResult($this->connection->query("SELECT * FROM timetable"));
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getHomeworks(int $intezmeny_id): array|false
+    function getHomeworkAttachments(int $intezmeny_id, int $homework_id): array|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            $ret = $this->connection->query('
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                'SELECT attachments.id, file_name FROM homework LEFT JOIN attachments on homework.id = homework_id WHERE homework.id = ?',
+                array($homework_id)
+            ))) === null ? null : $ret;
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    function getHomeworks(int $intezmeny_id): array|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            $ret = $this->handleQueryResult($this->connection->query('
                 SELECT homework.id, published, due, lesson.name, teacher.name
                 FROM homework
                 LEFT JOIN lesson ON lesson.id = lesson_id
-                LEFT JOIN teacher ON teacher.id = teacher_id;
-            ');
-            if ($ret === false) return false;
-            $homeworks = $ret->fetch_all();
+                LEFT JOIN teacher ON teacher.id = teacher_id
+            '));
+            if ($ret === null) return null;
+            $homeworks = $ret;
             for ($i = 0; $i < count($homeworks); $i++) {
-                $ret = $this->connection->execute_query(
-                    "SELECT id, file_name FROM attachments WHERE homework_id = ?;",
+                $ret = $this->handleQueryResult($this->connection->execute_query(
+                    "SELECT id, file_name FROM attachments WHERE homework_id = ?",
                     array($homeworks[$i][0])
-                );
-                if ($ret === false) return false;
-                array_push($homeworks[$i], $ret->fetch_all());
+                ));
+                if ($ret === null) return null;
+                array_push($homeworks[$i], $ret);
             }
             return $homeworks;
-        } catch (Exception $e) {
-            return false;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function getAttachmentName(int $intezmeny_id, int $attachment_id): string|false
+    function getAttachmentName(int $intezmeny_id, int $attachment_id): string|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_intezmeny_' . $intezmeny_id);
-            if ($ret === false) return false;
-            return $this->connection->execute_query(
-                "SELECT file_name FROM attachments WHERE id = ?;",
+            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
+            return ($ret = $this->handleQueryResult($this->connection->execute_query(
+                "SELECT file_name FROM attachments WHERE id = ?",
                 array($attachment_id)
-            )->fetch_all()[0][0];
-        } catch (Exception $e) {
-            return false;
+            ))) === null ? null : $ret[0][0];
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function createIntezmeny(string $intezmeny_name, int $admin_uid): bool
+    function createIntezmeny(string $intezmeny_name, int $admin_uid): true|null
     {
         try {
-            $ret = $this->connection->query('USE ordayna_main_db;');
-            if ($ret === false) return false;
-            $intezmeny_id = $this->connection->query('SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny;')->fetch_all()[0][0];
-            $ret = $this->connection->execute_query(
-                '
-                    SET @intezmeny_name = ?;
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            $ret = $this->handleQueryResult($this->connection->query('SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny'));
+            if ($ret === null) return null;
+            $intezmeny_id = $ret[0][0];
+            if ($this->handleQueryResult($this->connection->execute_query(
+                'SET @intezmeny_name = ?',
                 array($intezmeny_name)
-            );
-            if ($ret === false) return false;
-            $ret = $this->connection->multi_query(
+            )) === null) return null;
+            $this->connection->multi_query(
                 '
                     SET @admin_uid = ' . $admin_uid . ';
                     SET @intezmeny_id = (SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny);
@@ -671,46 +874,59 @@ class DB
                     SET FOREIGN_KEY_CHECKS = 1;
 
                     INSERT INTO intezmeny (id, name) VALUE (@intezmeny_id, @intezmeny_name);
-                    INSERT INTO intezmeny_users (intezmeny_id, users_id, is_admin) VALUE (@intezmeny_id, @admin_uid, true);
+                    INSERT INTO intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (@intezmeny_id, @admin_uid, "admin", TRUE);
 
                     USE ordayna_intezmeny_' . $intezmeny_id . ';
                 ' . $this->intezmeny_tables . $this->intezmeny_procedures,
             );
-            while ($this->connection->more_results()) {
-                $this->connection->next_result();
-                if (!$this->connection->store_result() and $this->connection->errno != 0) {
-                    return false;
-                };
+            if ($this->connection->errno !== 0) return null;
+            while ($this->connection->next_result() !== false) {
+                if ($this->connection->errno !== 0) return null;
             }
             return true;
-        } catch (Exception $e) {
-            return false;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
-    function deleteIntezmeny(int $intezmeny_id): bool
+    function deleteIntezmeny(int $intezmeny_id): bool|null
     {
         try {
-            $ret = $this->connection->query("USE ordayna_main_db;");
-            if ($ret === false) return false;
-            $ret = $this->connection->execute_query(
-                '
-                    DELETE FROM intezmeny WHERE id = ?;
-                ',
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            if ($this->handleQueryResult($this->connection->execute_query(
+                'DELETE FROM intezmeny WHERE id = ?',
                 array($intezmeny_id)
-            );
-            if ($ret == false) return false;
-            return $this->connection->query("DROP DATABASE ordayna_intezmeny_" . $intezmeny_id);
-        } catch (Exception $e) {
-            return false;
+            )) === null) return null;
+            return $this->handleQueryResult($this->connection->query("DROP DATABASE ordayna_intezmeny_" . $intezmeny_id));
+        } catch (Exception) {
+            return $this->logError(false);
+        }
+    }
+
+    /** The second worst thing to happen to those orphans */
+    function deleteOrphanedIntezmenys(): true|null
+    {
+        try {
+            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
+            $ids = $this->handleQueryResult($this->connection->query("CALL getOrphanedIntezmenys()"));
+            if ($ids === null) return null;
+            for ($i = 0; $i < count($ids); $i++) {
+                if ($this->handleQueryResult($this->connection->execute_query(
+                    'DELETE FROM intezmeny WHERE id = ?',
+                    array($ids[$i][0])
+                )) === null) return null;
+                if ($this->handleQueryResult($this->connection->query('DROP DATABASE ordayna_intezmeny_' . $ids[$i][0])) === null) return null;
+            }
+            return true;
+        } catch (Exception) {
+            return $this->logError(false);
         }
     }
 
     private $intezmeny_tables = '
         CREATE OR REPLACE TABLE class (
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL,
-            headcount            SMALLINT UNSIGNED NOT NULL
+            name                 VARCHAR(200) UNIQUE NOT NULL
          );
 
         CREATE OR REPLACE TABLE group_ (
@@ -739,8 +955,6 @@ class DB
             id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             name                 VARCHAR(200) NOT NULL,
             job                  VARCHAR(200) NOT NULL,
-            email                VARCHAR(254),
-            phone_number         VARCHAR(15),
             user_id              INT UNSIGNED
          );
 
@@ -751,12 +965,6 @@ class DB
           CONSTRAINT fk_teacher_lesson FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE NO ACTION,
           PRIMARY KEY (teacher_id, lesson_id)
         );
-
-        ALTER TABLE teacher MODIFY email VARCHAR(254) COMMENT \'The max length of a valid email address is technically 320 but you can\'\'t really use that due to the limit of the mailbox being 256 bytes (254 due to it always including a < and > bracket).
-        https://stackoverflow.com/questions/386294/what-is-the-maximum-length-of-a-valid-email-address\';
-
-        ALTER TABLE teacher MODIFY phone_number VARCHAR(15) COMMENT \'The max length of a phone number is 15 digits (not including the "+" sign and any spaces):
-        https://en.wikipedia.org/wiki/E.164\';
 
         CREATE OR REPLACE TABLE teacher_availability (
             id                   INT UNSIGNED     NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -821,12 +1029,13 @@ class DB
 
         CREATE OR REPLACE PROCEDURE newClass ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )
         BEGIN
-            INSERT INTO class (name, headcount) VALUES (in_name, in_headcount);
+            INSERT INTO class (name) VALUES (in_name);
+            CALL newGroup(in_name, in_headcount, LAST_INSERT_ID());
         END;
 
-        CREATE OR REPLACE PROCEDURE modClass ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE modClass ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200))
         BEGIN
-            UPDATE class SET name=in_name, headcount=in_headcount WHERE in_id=id;
+            UPDATE class SET name=in_name WHERE in_id=id;
         END;
 
         CREATE OR REPLACE PROCEDURE delClass ( IN in_id INT UNSIGNED )
@@ -834,17 +1043,17 @@ class DB
             DELETE FROM class WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newGroup_ ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE newGroup ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
         BEGIN
             INSERT INTO group_ (name, headcount, class_id) VALUES (in_name, in_headcount, in_class_id);
         END;
 
-        CREATE OR REPLACE PROCEDURE modGroup_ ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE modGroup ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
         BEGIN
             UPDATE group_ SET name=in_name, headcount=in_headcount, class_id=in_class_id WHERE in_id=id;
         END;
 
-        CREATE OR REPLACE PROCEDURE delGroup_ ( IN in_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE delGroup ( IN in_id INT UNSIGNED )
         BEGIN
             DELETE FROM group_ WHERE id=in_id;
         END;
@@ -879,14 +1088,14 @@ class DB
             DELETE FROM room WHERE id=in_id;
         END;
 
-        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15), IN in_user_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_user_id INT UNSIGNED )
         BEGIN
-            INSERT INTO teacher (name, job, email, phone_number, user_id) VALUES (in_name, in_job, in_email, in_phone_number, in_user_id);
+            INSERT INTO teacher (name, job, user_id) VALUES (in_name, in_job, in_user_id);
         END;
 
-        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_email VARCHAR(254), IN in_phone_number VARCHAR(15), in_user_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), in_user_id INT UNSIGNED )
         BEGIN
-            UPDATE teacher SET name=in_name, job=in_job, email=in_email, phone_number=in_phone_number, user_id=in_user_id WHERE in_id=id;
+            UPDATE teacher SET name=in_name, job=in_job, user_id=in_user_id WHERE in_id=id;
         END;
 
         CREATE OR REPLACE PROCEDURE delTeacher ( IN in_id INT UNSIGNED )
@@ -934,7 +1143,7 @@ class DB
             UPDATE timetable SET duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
         END;
 
-        CREATE OR REPLACE PROCEDURE delTimetable ( IN in_id INT UNSIGNED )
+        CREATE OR REPLACE PROCEDURE delTimetableElement ( IN in_id INT UNSIGNED )
         BEGIN
             DELETE FROM timetable WHERE id=in_id;
         END;
