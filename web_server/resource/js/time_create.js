@@ -31,7 +31,9 @@ function generateContentForCreate() {
 
 function lockData(){
     if (terem.value!="" && tanar.value!="" && targy.value!="" ){
-        alert("hy")
+        let ora_span=document.createElement("p");
+        ora_span.innerHTML="hello"
+        orarend.appendChild(ora_span)
         
     }
 }
@@ -39,3 +41,9 @@ function lockData(){
 function addItem(e, z) {
     document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
 }
+
+function deleteData(){
+    
+}
+
+

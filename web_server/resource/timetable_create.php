@@ -35,9 +35,9 @@
             </div>
         </div>
         <div class="col-8">
-            <div class="box" id="orarend_box">
+            <div class="box" >
                 <p class="h6">Órarend<hr></p>
-                <div class="box-md-long"></div>
+                <div class="box-md-long" id="orarend_box"></div>
                 <div class="input-div">
                     <button ><-</button>
                     <button onclick="lockData()">-></button>

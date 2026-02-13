@@ -110,6 +110,8 @@ h1{
 }
 
 
+
+
 .listbox{ width: 100%; }
 
 .box-md-long, .box-md-long-nb{ height: 44.4vh; }
@@ -126,6 +128,11 @@ h1{
     border: 2px var(--dark-purple) solid;
     padding: 1em;
     border-radius: 0.4em;
+}
+
+#orarend_box{
+    overflow: scroll;
+    max-height: 400px;
 }
 
 /*.box-nb,.box-small-nb,.box-long-nb,.box-less-long,.box-medium-nb,.box-tiny-nb,.box-smallest-nb,.box-md-long-nb{border: 3px greenyellow solid;padding: 1.1em;} 
