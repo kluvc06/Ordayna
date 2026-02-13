@@ -9,7 +9,7 @@ USE ordayna_main_db;
 
 -- If you delete an intezmeny delete the intezmeny's id from this table
 CREATE OR REPLACE TABLE intezmeny ( 
-	id   INT UNSIGNED NOT NULL PRIMARY KEY,
+	id   INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	name VARCHAR(200) NOT NULL
  );
 

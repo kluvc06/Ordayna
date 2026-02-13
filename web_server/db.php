@@ -3,20 +3,36 @@
 declare(strict_types=1);
 
 include "term.php";
+include "error.php";
 
 class DB
 {
     private $connection = null;
 
-    public function __construct()
+    public function __construct(mysqli $connection)
+    {
+        $this->connection = $connection;
+    }
+
+    public static function init(): DB|null
     {
         $databaseHost = file_get_contents("database_address");
-        if ($databaseHost === false) fwrite(STDOUT, "Failed to read \"database_address\" file\n");
+        if ($databaseHost === false) logError("Failed to read \"database_address\" file");
         $databaseUsername = 'ordayna_main';
         $databasePassword = '';
         $databaseName = '';
 
-        $this->connection = mysqli_connect($databaseHost, $databaseUsername, $databasePassword, $databaseName);
+        try {
+            $connection = mysqli_connect($databaseHost, $databaseUsername, $databasePassword, $databaseName);
+            if ($connection === false) {
+                logError(mysqli_connect_error());
+                return null;
+            }
+            return new DB($connection);
+        } catch (Exception) {
+            logError(mysqli_connect_error());
+            return null;
+        }
     }
 
     /** Returns first results contents as 2d array or null if $cur_result is null */
@@ -42,12 +58,7 @@ class DB
     private function logError(mysqli_result|bool $ret_value): mysqli_result|bool|null
     {
         if ($ret_value === false) {
-            $ret = file_put_contents(
-                "error_logs.txt",
-                date("Y-m-d H:i:s T", time()) . ": " . $this->connection->error . "\n",
-                FILE_APPEND | LOCK_EX
-            );
-            if ($ret === false) fwrite(STDOUT, "Failed to write logs to \"error_logs.txt\" file\n");
+            logError($this->connection->error);
             return null;
         }
         return $ret_value;
@@ -589,6 +600,7 @@ class DB
                 'CALL newAttachment(?, ?)',
                 array($homework_id, $file_name)
             )) === null) return null;
+            // Have to make an sql query here since calling a procedure overwrites mysqli_insert_id
             return ($ret = $this->handleQueryResult(
                 $this->connection->query("SELECT LAST_INSERT_ID()")
             )) === null ? null : (int) $ret[0][0];
@@ -856,25 +868,21 @@ class DB
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            $ret = $this->handleQueryResult($this->connection->query('SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny'));
-            if ($ret === null) return null;
-            $intezmeny_id = $ret[0][0];
             if ($this->handleQueryResult($this->connection->execute_query(
-                'SET @intezmeny_name = ?',
+                'INSERT INTO intezmeny (name) VALUE (?)',
                 array($intezmeny_name)
+            )) === null) return null;
+            $intezmeny_id = $this->connection->insert_id;
+            if ($this->handleQueryResult($this->connection->execute_query(
+                'INSERT INTO intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (?, ?, "admin", TRUE)',
+                array($intezmeny_id, $admin_uid)
             )) === null) return null;
             $this->connection->multi_query(
                 '
-                    SET @admin_uid = ' . $admin_uid . ';
-                    SET @intezmeny_id = (SELECT IFNULL(MAX(id)+1, 0) FROM intezmeny);
-
                     -- This allows us to replace the database without encountering foreign key errors
                     SET FOREIGN_KEY_CHECKS = 0;
                     CREATE OR REPLACE DATABASE ordayna_intezmeny_' . $intezmeny_id . ' CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_uca1400_ai_ci";
                     SET FOREIGN_KEY_CHECKS = 1;
-
-                    INSERT INTO intezmeny (id, name) VALUE (@intezmeny_id, @intezmeny_name);
-                    INSERT INTO intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (@intezmeny_id, @admin_uid, "admin", TRUE);
 
                     USE ordayna_intezmeny_' . $intezmeny_id . ';
                 ' . $this->intezmeny_tables . $this->intezmeny_procedures,
