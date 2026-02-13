@@ -13,7 +13,7 @@ use Lcobucci\JWT\UnencryptedToken;
 include "db.php";
 include "jwt.php";
 
-class UserController
+class Controller
 {
     private $jwt;
 
@@ -34,14 +34,17 @@ class UserController
 
         $db = new DB();
 
-        if ($db->userExistsEmail($email) === false) return ControllerRet::unauthorised;
+        $ret = $db->userExistsViaEmail($email);
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         $user_pass = $db->getUserPassViaEmail($email);
-        if ($user_pass === false) return ControllerRet::unexpected_error;
+        if ($user_pass === null) return ControllerRet::unexpected_error;
         if (password_verify($pass, $user_pass) === false) return ControllerRet::unauthorised;
 
         $user_id = $db->getUserIdViaEmail($email);
-        if ($user_id === false) return ControllerRet::unexpected_error;
+        if ($user_id === null) return ControllerRet::unexpected_error;
+
         $refresh_token = $this->jwt->createRefreshToken($user_id);
 
         $arr_cookie_options = array(
@@ -67,7 +70,9 @@ class UserController
         $new_token = $this->jwt->createRefreshToken($token->claims()->get("uid"));
 
         // Expires after 15 days
-        if ($db->newInvalidRefreshToken($token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === false) return ControllerRet::unexpected_error;
+        if ($db->newInvalidRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID), '15 0:0:0') === null) {
+            return ControllerRet::unexpected_error;
+        }
 
         $arr_cookie_options = array(
             // 15 days
@@ -121,7 +126,9 @@ class UserController
 
         $db = new DB();
 
-        if ($db->userExistsEmail($email) === true) return ControllerRet::user_already_exists;
+        $ret = $db->userExistsViaEmail($email);
+        if ($ret === true) return ControllerRet::already_exists;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         $pass_hash = password_hash($pass, PASSWORD_BCRYPT);
         if ($db->createUser($disp_name, $email, $phone_number, $pass_hash) === false) return ControllerRet::unexpected_error;
@@ -136,8 +143,8 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        // TODO: delete intezmeny's whose sole owner is this user
-        if ($db->deleteUserViaId($token->claims()->get("uid")) === false) return ControllerRet::unexpected_error;
+        if ($db->deleteUserViaId($token->claims()->get("uid")) === null) return ControllerRet::unexpected_error;
+        if ($db->deleteOrphanedIntezmenys() === null) return ControllerRet::unexpected_error;
 
         // Unset token cookies
         setcookie('RefreshToken', "", 0);
@@ -157,7 +164,7 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name) === false) return ControllerRet::unexpected_error;
+        if ($db->changeDisplayNameViaId($token->claims()->get("uid"), $new_disp_name) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -173,7 +180,7 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number) === false) return ControllerRet::unexpected_error;
+        if ($db->changePhoneNumberViaId($token->claims()->get("uid"), $data->new_phone_number) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -190,7 +197,7 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT)) === false) return ControllerRet::unexpected_error;
+        if ($db->changePasswordHashViaId($token->claims()->get("uid"), password_hash($new_pass, PASSWORD_BCRYPT)) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
     }
@@ -206,7 +213,7 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->createIntezmeny($intezmeny_name, $token->claims()->get("uid")) === false) return ControllerRet::unexpected_error;
+        if ($db->createIntezmeny($intezmeny_name, $token->claims()->get("uid")) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -222,10 +229,17 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->userExistsViaId($token->claims()->get("uid")) === false) return ControllerRet::unauthorised;
-        if ($db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id) === false) return ControllerRet::unauthorised;
+        $ret = $db->userExists($token->claims()->get("uid"));
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
+        $ret = $db->partOfIntezmeny($intezmeny_id, $token->claims()->get("uid"), true);
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
+        $ret = $db->isAdmin($intezmeny_id, $token->claims()->get("uid"));
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        if ($db->deleteIntezmeny($intezmeny_id) === false) return ControllerRet::unexpected_error;
+        if ($db->deleteIntezmeny($intezmeny_id) === null) return ControllerRet::unexpected_error;
         if (rmdirRecursive("user_data/intezmeny_$intezmeny_id") === false) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_no_content;
@@ -239,10 +253,65 @@ class UserController
         if (is_a($token, "ControllerRet") === true) return $token;
 
         $ret = $db->getIntezmenys($token->claims()->get("uid"));
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
+
+        return ControllerRet::success;
+    }
+
+    public function getProfile(): ControllerRet
+    {
+        $db = new DB();
+
+        $token = $this->validateAccessToken($db);
+        if (is_a($token, "ControllerRet") === true) return $token;
+
+        $ret = $db->getProfile($token->claims()->get("uid"));
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        header('Content-Type: application/json');
+        echo json_encode($ret);
+
+        return ControllerRet::success;
+    }
+
+    public function inviteToIntezmeny(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $email = $this->validateEmail(@$data->email);
+        if ($email === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, false);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->userExistsViaEmail($email);
+        if ($ret === false) return ControllerRet::not_found;
+        if ($ret === null) return ControllerRet::unexpected_error;
+        $invitee_uid = $db->getUserIdViaEmail($email);
+        if ($invitee_uid === null) return ControllerRet::unexpected_error;
+        $ret = $db->partOfIntezmeny($intezmeny_id, $invitee_uid, false);
+        if ($ret === true) return ControllerRet::already_exists;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->inviteUser($intezmeny_id, $invitee_uid) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function acceptInviteToIntezmeny(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $ret = $this->validateIntezmenyData($data, false);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id, $uid) = $ret;
+
+        $ret = $db->isInviteAccepted($intezmeny_id, $uid);
+        if ($ret === true) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->acceptInvite($intezmeny_id, $uid) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success;
     }
@@ -254,13 +323,18 @@ class UserController
         if ($name === null) return ControllerRet::bad_request;
         $headcount = $this->validateInteger(@$data->headcount, 5);
         if ($headcount === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->classExistsViaName($intezmeny_id, $name)) return ControllerRet::bad_request;
+        $ret = $db->classExistsViaName($intezmeny_id, $name);
+        if ($ret === true) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+        $ret = $db->groupExistsViaName($intezmeny_id, $name);
+        if ($ret === true) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        if ($db->createClass($intezmeny_id, $name, $headcount) === false) return ControllerRet::unexpected_error;
+        if ($db->createClass($intezmeny_id, $name, $headcount) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -270,13 +344,15 @@ class UserController
         $data = json_decode(file_get_contents("php://input"));
         $name = $this->validateString(@$data->name, max_chars: 200);
         if ($name === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->lessonExistsViaName($intezmeny_id, $name) === true) return ControllerRet::bad_request;
+        $ret = $db->lessonExistsViaName($intezmeny_id, $name);
+        if ($ret === true) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        if ($db->createLesson($intezmeny_id, $name) === false) return ControllerRet::unexpected_error;
+        if ($db->createLesson($intezmeny_id, $name) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -291,14 +367,20 @@ class UserController
         $class_id = $this->validateInteger(@$data->class_id, null_allowed: true);
         if ($class_id === null) return ControllerRet::bad_request;
         if ($class_id === false) $class_id = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($class_id !== null and $db->classExists($intezmeny_id, $class_id) === false) return ControllerRet::bad_request;
-        if ($db->groupExistsViaName($intezmeny_id, $name) === true) return ControllerRet::bad_request;
+        if ($class_id !== null) {
+            $ret = $db->classExists($intezmeny_id, $class_id);
+            if ($ret === false) return ControllerRet::bad_request;
+            if ($ret === null) return ControllerRet::unexpected_error;
+        }
+        $ret = $db->groupExistsViaName($intezmeny_id, $name);
+        if ($ret === true) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        if ($db->createGroup($intezmeny_id, $name, $headcount, $class_id) === false) return ControllerRet::unexpected_error;
+        if ($db->createGroup($intezmeny_id, $name, $headcount, $class_id) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -313,13 +395,15 @@ class UserController
         if ($type === false) $type = null;
         $space = $this->validateInteger(@$data->space, 5);
         if ($space === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->roomExistsViaName($intezmeny_id, $name) === true) return ControllerRet::bad_request;
+        $ret = $db->roomExistsViaName($intezmeny_id, $name);
+        if ($ret === true) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        if ($db->createRoom($intezmeny_id, $name, $type, $space) === false) return ControllerRet::unexpected_error;
+        if ($db->createRoom($intezmeny_id, $name, $type, $space) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -331,17 +415,23 @@ class UserController
         if ($name === null) return ControllerRet::bad_request;
         $job = $this->validateString(@$data->job, max_chars: 200);
         if ($job === null) return ControllerRet::bad_request;
-        $email = $this->validateEmail(@$data->email, true);
-        if ($email === null) return ControllerRet::bad_request;
-        if ($email === false) $email = null;
-        $phone_number = $this->validatePhoneNumber(@$data->phone_number, true);
-        if ($phone_number === null) return ControllerRet::bad_request;
-        if ($phone_number === false) $phone_number = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $teacher_uid = $this->validateInteger(@$data->teacher_uid, null_allowed: true);
+        if ($teacher_uid === null) return ControllerRet::bad_request;
+        if ($teacher_uid === false) $teacher_uid = null;
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->createTeacher($intezmeny_id, $name, $job, $email, $phone_number) === false) return ControllerRet::unexpected_error;
+        if ($teacher_uid !== null) {
+            $ret = $db->partOfIntezmeny($intezmeny_id, $teacher_uid, true);
+            if ($ret === false) return ControllerRet::unauthorised;
+            if ($ret === null) return ControllerRet::unexpected_error;
+            $ret = $db->isTeacher($intezmeny_id, $teacher_uid);
+            if ($ret === true) return ControllerRet::bad_request;
+            if ($ret === null) return ControllerRet::unexpected_error;
+        }
+
+        if ($db->createTeacher($intezmeny_id, $name, $job, $teacher_uid) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -359,11 +449,11 @@ class UserController
         $until = $this->validateTime(@$data->until, date_allowed: true);
         if ($until === null) return ControllerRet::bad_request;
         if ($from->getTimestamp() > $until->getTimestamp()) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->createTimetableElement($intezmeny_id, $duration->format("H:i:s"), $day, $from->format("Y-m-d"), $until->format("Y-m-d")) === false) return ControllerRet::unexpected_error;
+        if ($db->createTimetableElement($intezmeny_id, $duration->format("H:i:s"), $day, $from->format("Y-m-d"), $until->format("Y-m-d")) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -380,14 +470,22 @@ class UserController
         $teacher_id = $this->validateInteger(@$data->teacher_id, null_allowed: true);
         if ($teacher_id === null) return ControllerRet::bad_request;
         if ($teacher_id === false) $teacher_id = null;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($lesson_id !== null and $db->lessonExists($intezmeny_id, $lesson_id) === false) return ControllerRet::bad_request;
-        if ($teacher_id !== null and $db->teacherExists($intezmeny_id, $teacher_id) === false) return ControllerRet::bad_request;
+        if ($lesson_id !== null) {
+            $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+            if ($ret === false) return ControllerRet::bad_request;
+            if ($ret === null) return ControllerRet::unexpected_error;
+        }
+        if ($teacher_id !== null) {
+            $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+            if ($ret === false) return ControllerRet::bad_request;
+            if ($ret === null) return ControllerRet::unexpected_error;
+        }
 
-        if ($db->createHomework($intezmeny_id, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === false) return ControllerRet::unexpecter_error;
+        if ($db->createHomework($intezmeny_id, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === null) return ControllerRet::unexpected_error;
 
         return ControllerRet::success_created;
     }
@@ -401,90 +499,246 @@ class UserController
         if ($file_name === null) return ControllerRet::bad_request;
         $file_contents = $this->validateFileContents(@$data->file_contents);
         if ($file_contents === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->homeworkExists($intezmeny_id, $homework_id) === false) return ControllerRet::unauthorised;
+        $ret = $db->homeworkExists($intezmeny_id, $homework_id);
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         $attachment_id = $db->createAttachment($intezmeny_id, $homework_id, $file_name);
-        if ($attachment_id === false) return ControllerRet::unexpected_error;
+        if ($attachment_id === null) return ControllerRet::unexpected_error;
         if (file_force_contents("user_data/intezmeny_$intezmeny_id/" . $file_name . "_$attachment_id", $file_contents) === false) {
-            // TODO: delete attachment from database
+            if ($db->deleteAttachment($intezmeny_id, $attachment_id) === null) return ControllerRet::unexpected_error;
             return ControllerRet::unexpected_error;
         }
 
         return ControllerRet::success_created;
     }
 
+    public function deleteClass(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $class_id = $this->validateInteger(@$data->class_id);
+        if ($class_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->classExists($intezmeny_id, $class_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteClass($intezmeny_id, $class_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteLesson(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $lesson_id = $this->validateInteger(@$data->lesson_id);
+        if ($lesson_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteLesson($intezmeny_id, $lesson_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteGroup(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $group_id = $this->validateInteger(@$data->group_id);
+        if ($group_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->groupExists($intezmeny_id, $group_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteGroup($intezmeny_id, $group_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteRoom(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $room_id = $this->validateInteger(@$data->room_id);
+        if ($room_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->roomExists($intezmeny_id, $room_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteRoom($intezmeny_id, $room_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteTeacher(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $teacher_id = $this->validateInteger(@$data->teacher_id);
+        if ($teacher_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteTeacher($intezmeny_id, $teacher_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteTimetableElement(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $timetable_element_id = $this->validateInteger(@$data->timetable_element_id);
+        if ($timetable_element_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->timetableElementExists($intezmeny_id, $timetable_element_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        if ($db->deleteTimetableElement($intezmeny_id, $timetable_element_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteHomework(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $homework_id = $this->validateInteger(@$data->homework_id);
+        if ($homework_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->homeworkExists($intezmeny_id, $homework_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        $attachments = $db->getHomeworkAttachments($intezmeny_id, $homework_id);
+        if ($attachments === null) return ControllerRet::unexpected_error;
+
+        for ($i = 0; $i < count($attachments); $i++) {
+            if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachments[$i][1] . "_" . $attachments[$i][0]) === false) return ControllerRet::unexpected_error;
+        }
+        if ($db->deleteHomework($intezmeny_id, $homework_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
+    public function deleteAttachment(): ControllerRet
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $attachment_id = $this->validateInteger(@$data->attachment_id);
+        if ($attachment_id === null) return ControllerRet::bad_request;
+        $ret = $this->validateIntezmenyData($data, true);
+        if (is_a($ret, "ControllerRet") === true) return $ret;
+        list($db, $intezmeny_id) = $ret;
+
+        $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
+        if ($ret === false) return ControllerRet::bad_request;
+        if ($ret === null) return ControllerRet::unexpected_error;
+
+        $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
+        if ($attachment_name === null) return ControllerRet::unexpected_error;
+
+        if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id) === false) return ControllerRet::unexpected_error;
+        if ($db->deleteAttachment($intezmeny_id, $attachment_id) === null) return ControllerRet::unexpected_error;
+
+        return ControllerRet::success;
+    }
+
     public function getClasses(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getClasses($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
 
     public function getLessons(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getLessons($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
 
     public function getGroups(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getGroups($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
 
     public function getRooms(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getRooms($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
 
     public function getTeachers(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getTeachers($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
         echo json_encode($ret);
@@ -494,27 +748,27 @@ class UserController
 
     public function getTimetable(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getTimetable($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
-        echo json_encode($ret->fetch_all());
+        echo json_encode($ret);
 
         return ControllerRet::success;
     }
 
     public function getHomeworks(): ControllerRet
     {
-        $ret = $this->validateGetIntezmenyData(json_decode(file_get_contents("php://input")));
+        $ret = $this->validateIntezmenyData(json_decode(file_get_contents("php://input")), true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
         $ret = $db->getHomeworks($intezmeny_id);
-        if ($ret === false) return ControllerRet::unexpected_error;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         header('Content-Type: application/json');
         echo json_encode($ret);
@@ -527,14 +781,16 @@ class UserController
         $data = json_decode(file_get_contents("php://input"));
         $attachment_id = $this->validateInteger(@$data->attachment_id);
         if ($attachment_id === null) return ControllerRet::bad_request;
-        $ret = $this->validateGetIntezmenyData($data);
+        $ret = $this->validateIntezmenyData($data, true);
         if (is_a($ret, "ControllerRet") === true) return $ret;
         list($db, $intezmeny_id) = $ret;
 
-        if ($db->attachmentExists($intezmeny_id, $attachment_id) === false) return ControllerRet::unauthorised;
+        $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
-        if ($attachment_id === false) return ControllerRet::unexpected_error;
+        if ($attachment_id === null) return ControllerRet::unexpected_error;
 
         $file_contents = file_get_contents("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id);
         if ($file_contents === false) return ControllerRet::unexpected_error;
@@ -546,9 +802,9 @@ class UserController
     }
 
     /**
-     * Returns the database connection and the intezmeny's id
+     * Returns the database connection and the intezmeny's id and the uid
      */
-    private function validateGetIntezmenyData(mixed $data): ControllerRet|array
+    private function validateIntezmenyData(mixed $data, bool $invite_must_be_accepted): ControllerRet|array
     {
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
@@ -558,9 +814,11 @@ class UserController
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
 
-        if ($db->partOfIntezmeny($token->claims()->get("uid"), $intezmeny_id) === false) return ControllerRet::unauthorised;
+        $ret = $db->partOfIntezmeny($intezmeny_id, $token->claims()->get("uid"), $invite_must_be_accepted);
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
-        return array($db, $intezmeny_id);
+        return array($db, $intezmeny_id, $token->claims()->get("uid"));
     }
 
     private function validateRefreshToken(DB $db): ControllerRet|UnencryptedToken
@@ -570,10 +828,14 @@ class UserController
         $token = $this->jwt->parseToken($_COOKIE["RefreshToken"]);
         if ($token === null) return ControllerRet::bad_request;
 
-        $invalid_ids = $db->getRevokedRefreshTokens();
-        if ($this->jwt->validateRefreshToken($token, $invalid_ids) === false) return ControllerRet::unauthorised;
+        $ret = $db->isRevokedRefreshToken($token->claims()->get("uid"), $token->claims()->get(RegisteredClaims::ID));
+        if ($ret === true) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
+        if ($this->jwt->validateRefreshToken($token) === false) return ControllerRet::unauthorised;
 
-        if ($db->userExistsViaId($token->claims()->get("uid")) === false) return ControllerRet::unauthorised;
+        $ret = $db->userExists($token->claims()->get("uid"));
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         return $token;
     }
@@ -587,7 +849,9 @@ class UserController
 
         if ($this->jwt->validateAccessToken($token) === false) return ControllerRet::unauthorised;
 
-        if ($db->userExistsViaId($token->claims()->get("uid")) === false) return ControllerRet::unauthorised;
+        $ret = $db->userExists($token->claims()->get("uid"));
+        if ($ret === false) return ControllerRet::unauthorised;
+        if ($ret === null) return ControllerRet::unexpected_error;
 
         return $token;
     }
@@ -678,19 +942,19 @@ class UserController
         if ($date_allowed === true and $time_allowed === true) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("Y-m-d H:i:s", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else if ($date_allowed === true and $time_allowed === false) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("Y-m-d", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else if ($date_allowed === false and $time_allowed === true) {
             try {
                 $ret = DateTimeImmutable::createFromFormat("H:i:s", $str_time);
-            } catch (ValueError $e) {
+            } catch (ValueError) {
                 return null;
             }
         } else {
@@ -769,9 +1033,9 @@ function handleReturn(ControllerRet $ret_val): void
             http_response_code(400);
             echo "Bad request";
             break;
-        case ControllerRet::user_already_exists:
+        case ControllerRet::already_exists:
             http_response_code(400);
-            echo "User already exists";
+            echo "Already exists";
             break;
         case ControllerRet::unauthorised:
             http_response_code(403);
@@ -795,7 +1059,8 @@ enum ControllerRet
     case success_no_content;
     case bad_request;
     case unauthorised;
-    case user_already_exists;
+    case already_exists;
+    case not_found;
     case unexpected_error;
 }
 
@@ -807,7 +1072,7 @@ function file_force_contents(string $dir, string $contents): int|false
     if (is_dir($dir) === false) mkdir($dir, recursive: true);
     try {
         return file_put_contents("$dir/$file", $contents, LOCK_EX);
-    } catch (ValueError $e) {
+    } catch (ValueError) {
         return false;
     }
 }
