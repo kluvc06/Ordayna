@@ -32,7 +32,8 @@ class Controller
         $pass = $this->validateString(@$data->pass, min_chars: 8, max_chars: 300);
         if ($pass === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $ret = $db->userExistsViaEmail($email);
         if ($ret === false) return ControllerRet::unauthorised;
@@ -63,7 +64,8 @@ class Controller
     public function refreshRefreshToken(): ControllerRet
     {
         global $is_test_server;
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateRefreshToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -91,7 +93,8 @@ class Controller
     public function getAccessToken(): ControllerRet
     {
         global $is_test_server;
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateRefreshToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -124,7 +127,8 @@ class Controller
         if ($phone_number === null) return ControllerRet::bad_request;
         if ($phone_number === false) $phone_number = null;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $ret = $db->userExistsViaEmail($email);
         if ($ret === true) return ControllerRet::already_exists;
@@ -138,7 +142,8 @@ class Controller
 
     public function deleteUser(): ControllerRet
     {
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -159,7 +164,8 @@ class Controller
         $new_disp_name = $this->validateString(@$data->new_disp_name, max_chars: 200);
         if ($new_disp_name === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -175,7 +181,8 @@ class Controller
         $new_phone_number = $this->validatePhoneNumber(@$data->new_phone_number, false);
         if ($new_phone_number === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -192,7 +199,8 @@ class Controller
         $new_pass = $this->validateString(@$data->new_pass, min_chars: 8, max_chars: 300);
         if ($new_pass === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -208,7 +216,8 @@ class Controller
         $intezmeny_name = $this->validateString(@$data->intezmeny_name, max_chars: 200);
         if ($intezmeny_name === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -224,7 +233,8 @@ class Controller
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -247,7 +257,8 @@ class Controller
 
     public function getIntezmenys(): ControllerRet
     {
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -263,7 +274,8 @@ class Controller
 
     public function getProfile(): ControllerRet
     {
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
@@ -809,7 +821,8 @@ class Controller
         $intezmeny_id = $this->validateInteger(@$data->intezmeny_id);
         if ($intezmeny_id === null) return ControllerRet::bad_request;
 
-        $db = new DB();
+        $db = DB::init();
+        if ($db === null) return ControllerRet::unexpected_error;
 
         $token = $this->validateAccessToken($db);
         if (is_a($token, "ControllerRet") === true) return $token;
