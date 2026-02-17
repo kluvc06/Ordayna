@@ -36,7 +36,21 @@
         </div>
         <div class="col-8">
             <div class="box" >
-                <p class="h6">Órarend<hr></p>
+                <p class="h6">Órarend 
+                    &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;  
+                    <span id="bitch_move">
+                    <label for="choose_day">Nap kiválasztása:</label> 
+                    <select name="choose_day" id="days">
+                        <option value="Hétfő">Hétfő</option>
+                        <option value="Kedd">Kedd</option>
+                        <option value="Szerda">Szerda</option>
+                        <option value="Csütörtök">Csütörtök</option>
+                        <option value="Péntek">Péntek</option>
+                        <option value="Szombat">Szombat</option>
+                        <option value="Vasárnap">Vasárnap</option>
+                    </select>
+                    </span>
+                    <hr></p>
                 <div class="box-md-long" id="orarend_box"></div>
                 <div class="input-div">
                     <button ><-</button>

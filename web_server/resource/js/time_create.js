@@ -9,6 +9,8 @@ const subj_tag = document.getElementById("tantargy_option");
 const room_tag = document.getElementById("terem_option");
 const clas_tag = document.getElementById("classes");
 
+const day=document.getElementById("days");
+
 const orarend = document.getElementById("orarend_box");
 
 const targy =document.getElementById('targy');
@@ -29,11 +31,16 @@ function generateContentForCreate() {
     console.log("works")
 }
 
+let db=0;
+
 function lockData(){
     if (terem.value!="" && tanar.value!="" && targy.value!="" ){
-        let ora_span=document.createElement("p");
-        ora_span.innerHTML="hello"
+        curr_id="ora_"+db;
+        let ora_span=document.createElement("span");
+        ora_span.setAttribute('id',curr_id)
+        ora_span.innerHTML= db+" "+ terem.value+" "+ tanar.value+" "+ targy.value +" "+ day.value+"<br>";
         orarend.appendChild(ora_span)
+        db++;
         
     }
 }
