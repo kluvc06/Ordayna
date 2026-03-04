@@ -1,28 +1,36 @@
 <?php
+
 declare(strict_types=1);
 
-include "term.php";
+namespace JWT;
+
+require_once "config.php";
+
+use Config\Config;
+use function Error\logError;
+use DateTimeImmutable;
+use DateTimeZone;
+use Exception;
 
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Encoding\ChainedFormatter;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Token\Builder;
 use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Encoding\CannotDecodeContent;
+use Lcobucci\JWT\Signer\Blake2b;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Token\UnsupportedHeaderFound;
 use Lcobucci\JWT\Validation\Constraint\HasClaim;
-
 use Lcobucci\JWT\Validation\Validator;
-use Lcobucci\JWT\Validation\Constraint\IdentifiedBy;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\RelatedTo;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Ramsey\Uuid\Uuid;
 
 class JWT
 {
@@ -32,18 +40,25 @@ class JWT
 
     function __construct()
     {
-        $this->tokenBuilder = (new Builder(new JoseEncoder(), ChainedFormatter::default()));
-        $this->algorithm    = new Sha256();
-        try {
-            $this->key = InMemory::file('./secret.key');
-        } catch (Exception) {
-            fwrite(STDOUT, "Failed to open secrets file\n");
-        }
+        $this->tokenBuilder = new Builder(new JoseEncoder(), ChainedFormatter::default());
+        $this->algorithm = new Blake2b();
     }
 
-    function createRefreshToken(int $user_id): UnencryptedToken
+    public static function init(): JWT|false
     {
-        $now   = new DateTimeImmutable();
+        $jwt = new JWT();
+        try {
+            $jwt->key = InMemory::plainText(Config::$jwt_secret);
+        } catch (Exception $e) {
+            logError("Failed to initialize JWT Class from Config::\$jwt_secret; Exception: " . $e->getMessage());
+            return false;
+        }
+        return $jwt;
+    }
+
+    public function createRefreshToken(int $user_id): UnencryptedToken
+    {
+        $now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
@@ -52,7 +67,7 @@ class JWT
             // Configures the subject of the token (sub claim)
             ->relatedTo('refresh')
             // Configures the id (jti claim)
-            ->identifiedBy(uuidv4())
+            ->identifiedBy(Uuid::uuid4()->toString())
             // Configures the time that the token was issue (iat claim)
             ->issuedAt($now)
             // Configures the time that the token can be used (nbf claim)
@@ -67,9 +82,9 @@ class JWT
             ->getToken($this->algorithm, $this->key);
     }
 
-    function createAccessToken(int $user_id): UnencryptedToken
+    public function createAccessToken(int $user_id): UnencryptedToken
     {
-        $now   = new DateTimeImmutable();
+        $now = new DateTimeImmutable("now", new DateTimeZone("UTC"));
         return $this->tokenBuilder
             // Configures the issuer (iss claim)
             ->issuedBy('http://ordayna.website')
@@ -78,7 +93,7 @@ class JWT
             // Configures the subject of the token (sub claim)
             ->relatedTo('access')
             // Configures the id (jti claim)
-            ->identifiedBy(uuidv4())
+            ->identifiedBy(Uuid::uuid4()->toString())
             // Configures the time that the token was issue (iat claim)
             ->issuedAt($now)
             // Configures the time that the token can be used (nbf claim)
@@ -96,7 +111,7 @@ class JWT
     /**
      * Returns false on invalid token and true on valid token
      */
-    function validateRefreshToken(UnencryptedToken $token): bool
+    public function validateRefreshToken(UnencryptedToken $token): bool
     {
         $validator = new Validator();
 
@@ -126,7 +141,7 @@ class JWT
     /**
      * Returns false on invalid token and true on valid token
      */
-    function validateAccessToken(UnencryptedToken $token): bool
+    public function validateAccessToken(UnencryptedToken $token): bool
     {
         $validator = new Validator();
 
@@ -153,27 +168,13 @@ class JWT
         return true;
     }
 
-    function parseToken(string $token_str): UnencryptedToken|null
+    public function parseToken(string $token_str): UnencryptedToken|null
     {
         $parser = new Parser(new JoseEncoder());
-
         try {
-            $token = $parser->parse($token_str);
+            return $parser->parse($token_str);
         } catch (CannotDecodeContent | InvalidTokenStructure | UnsupportedHeaderFound) {
             return null;
         }
-        assert($token instanceof UnencryptedToken);
-
-        return $token;
     }
-}
-
-function uuidv4()
-{
-    $data = random_bytes(16);
-
-    $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // set version to 0100
-    $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
-
-    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 }

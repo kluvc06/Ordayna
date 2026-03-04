@@ -2,297 +2,90 @@
 
 declare(strict_types=1);
 
-require 'vendor/autoload.php';
+namespace Router;
 
-include "controller.php";
+require 'vendor/autoload.php';
+require_once "controller.php";
+
+use Controller\Controller;
+
 $controller = new Controller();
 
-$req_uri = explode("/", explode("?", $_SERVER["REQUEST_URI"])[0]);
-
-if (count($req_uri) <= 1) {
-    if ($_SERVER["REQUEST_METHOD"] !== "GET") {
+function route(string $method, callable $function): never
+{
+    if ($_SERVER["REQUEST_METHOD"] === $method) {
+        call_user_func($function);
+    } else {
         http_response_code(405);
-        return;
     }
-    header("Location: resource/index.html");
-    return;
+    exit();
 }
 
-switch ($req_uri[1]) {
-    case "":
-        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-            http_response_code(405);
-            break;
-        }
-        header("Location: resource/index.html");
-        break;
-    // This is never reached when the backend is behind nginx but the built in php server depends on this
-    case "resource":
-        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-            http_response_code(405);
-            break;
-        }
+// This is never reached when the backend is behind nginx but the built in php server depends on this
+if (explode("/", explode("?", $_SERVER["REQUEST_URI"])[0])[1] === 'resource') {
+    if ($_SERVER["REQUEST_METHOD"] === "GET") {
         return false;
-        break;
-    case "token":
-        if (count($req_uri) <= 2) {
-            http_response_code(404);
-            break;
-        }
-
-        switch ($req_uri[2]) {
-            case "get_refresh_token":
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->getRefreshToken());
-                break;
-            case "refresh_refresh_token":
-                if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->refreshRefreshToken());
-                break;
-            case "get_access_token":
-                if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->getAccessToken());
-                break;
-            default:
-                http_response_code(404);
-                return;
-        }
-        break;
-    case "user":
-        if (count($req_uri) <= 2) {
-            http_response_code(404);
-            break;
-        }
-
-        switch ($req_uri[2]) {
-            case "create_user":
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->createUser());
-                break;
-            case "profile":
-                if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->getProfile());
-                break;
-            case "delete_user":
-                if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->deleteUser());
-                break;
-            case "change_disp_name":
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->changeDisplayName());
-                break;
-            case "change_phone_number":
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->changePhoneNumber());
-                break;
-            case "change_pass":
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                handleReturn($controller->changePassword());
-                break;
-            default:
-                http_response_code(404);
-                break;
-        }
-        break;
-    case "create_intezmeny":
-        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-            http_response_code(405);
-            break;
-        }
-        handleReturn($controller->createIntezmeny());
-        break;
-    case "delete_intezmeny":
-        if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
-            http_response_code(405);
-            break;
-        }
-        handleReturn($controller->deleteIntezmeny());
-        break;
-    case "get_intezmenys":
-        if ($_SERVER["REQUEST_METHOD"] !== "GET") {
-            http_response_code(405);
-            break;
-        }
-        handleReturn($controller->getIntezmenys());
-        break;
-    case "intezmeny":
-        if (count($req_uri) <= 2) {
-            http_response_code(404);
-            break;
-        }
-
-        switch ($req_uri[2]) {
-            case "user":
-                if (count($req_uri) <= 3) {
-                    http_response_code(404);
-                    break;
-                }
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                switch ($req_uri[3]) {
-                    case "invite":
-                        handleReturn($controller->inviteToIntezmeny());
-                        break;
-                    case "accept_invite":
-                        handleReturn($controller->acceptInviteToIntezmeny());
-                        break;
-                    default:
-                        http_response_code(404);
-                        break;
-                }
-                break;
-            case "create":
-                if (count($req_uri) <= 3) {
-                    http_response_code(404);
-                    break;
-                }
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                switch ($req_uri[3]) {
-                    case "class":
-                        handleReturn($controller->createClass());
-                        break;
-                    case "lesson":
-                        handleReturn($controller->createLesson());
-                        break;
-                    case "group":
-                        handleReturn($controller->createGroup());
-                        break;
-                    case "room":
-                        handleReturn($controller->createRoom());
-                        break;
-                    case "teacher":
-                        handleReturn($controller->createTeacher());
-                        break;
-                    case "timetable_element":
-                        handleReturn($controller->createTimetableElement());
-                        break;
-                    case "homework":
-                        handleReturn($controller->createHomework());
-                        break;
-                    case "attachment":
-                        handleReturn($controller->createAttachment());
-                        break;
-                    default:
-                        http_response_code(404);
-                        break;
-                }
-                break;
-            case "delete":
-                if (count($req_uri) <= 3) {
-                    http_response_code(404);
-                    break;
-                }
-                if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
-                    http_response_code(405);
-                    break;
-                }
-                switch ($req_uri[3]) {
-                    case "class":
-                        handleReturn($controller->deleteClass());
-                        break;
-                    case "lesson":
-                        handleReturn($controller->deleteLesson());
-                        break;
-                    case "group":
-                        handleReturn($controller->deleteGroup());
-                        break;
-                    case "room":
-                        handleReturn($controller->deleteRoom());
-                        break;
-                    case "teacher":
-                        handleReturn($controller->deleteTeacher());
-                        break;
-                    case "timetable_element":
-                        handleReturn($controller->deleteTimetableElement());
-                        break;
-                    case "homework":
-                        handleReturn($controller->deleteHomework());
-                        break;
-                    case "attachment":
-                        handleReturn($controller->deleteAttachment());
-                        break;
-                    default:
-                        http_response_code(404);
-                        break;
-                }
-                break;
-            case "get":
-                if (count($req_uri) <= 3) {
-                    http_response_code(404);
-                    break;
-                }
-                if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-                    http_response_code(405);
-                    break;
-                }
-                switch ($req_uri[3]) {
-                    case "classes":
-                        handleReturn($controller->getClasses());
-                        break;
-                    case "groups":
-                        handleReturn($controller->getGroups());
-                        break;
-                    case "lessons":
-                        handleReturn($controller->getLessons());
-                        break;
-                    case "rooms":
-                        handleReturn($controller->getRooms());
-                        break;
-                    case "teachers":
-                        handleReturn($controller->getTeachers());
-                        break;
-                    case "timetable":
-                        handleReturn($controller->getTimetable());
-                        break;
-                    case "homeworks":
-                        handleReturn($controller->getHomeworks());
-                        break;
-                    case "attachment":
-                        handleReturn($controller->getAttachment());
-                        break;
-                    default:
-                        http_response_code(404);
-                        break;
-                }
-                break;
-            default:
-                http_response_code(404);
-                break;
-        }
-        break;
-    default:
-        http_response_code(404);
-        break;
+    } else {
+        http_response_code(405);
+    }
+    exit();
 }
+
+$req_uri = explode("?", $_SERVER["REQUEST_URI"])[0];
+
+if ($req_uri === '/' or $req_uri === '') {
+    route("GET", function () {
+        header("Location: /resource/index.html", true, 308);
+    });
+}
+
+match ($req_uri) {
+    '/token/get_refresh_token' => route('POST', [$controller, 'getRefreshToken']),
+    '/token/refresh_refresh_token' => route('GET', [$controller, 'refreshRefreshToken']),
+    '/token/get_access_token' => route('GET', [$controller, 'getAccessToken']),
+    '/user/create' => route('POST', [$controller, 'createUser']),
+    '/user/profile' => route('GET', [$controller, 'getProfile']),
+    '/user/delete' => route('DELETE', [$controller, 'deleteUser']),
+    '/user/change/display_name' => route('POST', [$controller, 'changeDisplayName']),
+    '/user/change/phone_number' => route('POST', [$controller, 'changePhoneNumber']),
+    '/user/change/password' => route('POST', [$controller, 'changePassword']),
+    '/create_intezmeny' => route('POST', [$controller, 'createIntezmeny']),
+    '/delete_intezmeny' => route('DELETE', [$controller, 'deleteIntezmeny']),
+    '/get_intezmenys' => route('GET', [$controller, 'getIntezmenys']),
+    '/intezmeny/user/invite' => route('POST', [$controller, 'inviteToIntezmeny']),
+    '/intezmeny/user/accept_invite' => route('POST', [$controller, 'acceptInviteToIntezmeny']),
+    '/intezmeny/create/class' => route('POST', [$controller, 'createClass']),
+    '/intezmeny/create/lesson' => route('POST', [$controller, 'createLesson']),
+    '/intezmeny/create/group' => route('POST', [$controller, 'createGroup']),
+    '/intezmeny/create/room' => route('POST', [$controller, 'createRoom']),
+    '/intezmeny/create/teacher' => route('POST', [$controller, 'createTeacher']),
+    '/intezmeny/create/timetable_element' => route('POST', [$controller, 'createTimetableElement']),
+    '/intezmeny/create/homework' => route('POST', [$controller, 'createHomework']),
+    '/intezmeny/create/attachment' => route('POST', [$controller, 'createAttachment']),
+    '/intezmeny/delete/class' => route('DELETE', [$controller, 'deleteClass']),
+    '/intezmeny/delete/lesson' => route('DELETE', [$controller, 'deleteLesson']),
+    '/intezmeny/delete/group' => route('DELETE', [$controller, 'deleteGroup']),
+    '/intezmeny/delete/room' => route('DELETE', [$controller, 'deleteRoom']),
+    '/intezmeny/delete/teacher' => route('DELETE', [$controller, 'deleteTeacher']),
+    '/intezmeny/delete/timetable_element' => route('DELETE', [$controller, 'deleteTimetableElement']),
+    '/intezmeny/delete/homework' => route('DELETE', [$controller, 'deleteHomework']),
+    '/intezmeny/delete/attachment' => route('DELETE', [$controller, 'deleteAttachment']),
+    '/intezmeny/update/class' => route('POST', [$controller, 'updateClass']),
+    '/intezmeny/update/lesson' => route('POST', [$controller, 'updateLesson']),
+    '/intezmeny/update/group' => route('POST', [$controller, 'updateGroup']),
+    '/intezmeny/update/room' => route('POST', [$controller, 'updateRoom']),
+    '/intezmeny/update/teacher' => route('POST', [$controller, 'updateTeacher']),
+    '/intezmeny/update/timetable_element' => route('POST', [$controller, 'updateTimetableElement']),
+    '/intezmeny/update/homework' => route('POST', [$controller, 'updateHomework']),
+    '/intezmeny/get/classes' => route('POST', [$controller, 'getClasses']),
+    '/intezmeny/get/lessons' => route('POST', [$controller, 'getLessons']),
+    '/intezmeny/get/groups' => route('POST', [$controller, 'getGroups']),
+    '/intezmeny/get/rooms' => route('POST', [$controller, 'getRooms']),
+    '/intezmeny/get/teachers' => route('POST', [$controller, 'getTeachers']),
+    '/intezmeny/get/timetable' => route('POST', [$controller, 'getTimetable']),
+    '/intezmeny/get/homeworks' => route('POST', [$controller, 'getHomeworks']),
+    '/intezmeny/get/attachment' => route('POST', [$controller, 'getAttachment']),
+    default => route("GET", function () {
+        header("Location: /resource/index.html", true, 308);
+    }),
+};

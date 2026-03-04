@@ -1,12 +1,12 @@
 services:
   database:
     image: mariadb
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "8001:3306"
     restart: always
     environment:
-      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
-      # MARIADB_RANDOM_ROOT_PASSWORD: true
+      # MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MARIADB_RANDOM_ROOT_PASSWORD: true
     volumes:
       - ./db:/db
       - "./config/docker_init.sql:/docker-entrypoint-initdb.d/ordayna_init.sql"
