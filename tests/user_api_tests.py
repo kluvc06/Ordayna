@@ -317,8 +317,8 @@ def inviteEndpoints():
     testToken("Get profile", "GET", "/user/profile", {}, wrong_access_jar)
     testEndpoint("Get profile, method is not GET", "PATCH", "/user/profile", teacher_access_jar, {}, 405, "")
     response = testEndpointNoErrorHandling("GET", "/user/profile", teacher_access_jar, {})
-    handleApiError("Get profile", response, 200, f"[{response.json()[0]},\"tester\",\"tester_teacher@test.com\",\"123456789012345\"]")
-    teacher_uid = response.json()[0]
+    handleApiError("Get profile", response, 200, '{"id":' + f'{response.json()["id"]}' + ',"display_name":"tester","email":"tester_teacher@test.com","phone_number":"123456789012345"}')
+    teacher_uid = response.json()["id"]
 
 
 def intezmenyCreateEndpoints():

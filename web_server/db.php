@@ -6,17 +6,17 @@ namespace DB;
 
 require_once "error.php";
 require_once "config.php";
+require_once "intezmeny_sql.php";
 
 use Config\Config;
 use function Error\logError;
-use DateTimeImmutable;
 use Exception;
 use mysqli;
 use mysqli_result;
 
 class DB
 {
-    private $connection = null;
+    public mysqli $connection;
 
     public function __construct(mysqli $connection)
     {
@@ -58,7 +58,7 @@ class DB
      * Return $ret_value
      * Only logs error if $ret_value === false
      */
-    private function logError(mysqli_result|bool $ret_value): mysqli_result|bool|null
+    function logError(mysqli_result|bool $ret_value): mysqli_result|bool|null
     {
         if ($ret_value === false) {
             logError($this->connection->error);
@@ -68,7 +68,7 @@ class DB
     }
 
     /** Frees all results but only returns the first */
-    private function handleQueryResult(mysqli_result|bool $ret): array|bool|null
+    function handleQueryResult(mysqli_result|bool $ret): array|bool|null
     {
         if ($ret === false) {
             $this->freeRemainingResults(null);
@@ -79,259 +79,6 @@ class DB
             return true;
         }
         return $this->freeRemainingResults($ret);
-    }
-
-    function getUserIdViaEmail(string $email): int|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            $ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT id FROM users WHERE email = ?',
-                array($email)
-            ));
-            return $ret === null ? null : $ret[0][0];
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getUserPassHash(int $uid): string|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT password_hash FROM users WHERE id = ?',
-                array($uid)
-            ))) === null ? null : $ret[0][0];
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getUserPassHashViaEmail(string $email): string|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT password_hash FROM users WHERE email = ?',
-                array($email)
-            ))) === null ? null : $ret[0][0];
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function userExistsViaEmail(string $email): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM users WHERE email = ?)',
-                array($email)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function userExists(int $uid): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM users WHERE id = ?)',
-                array($uid)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function createUser(string $display_name, string $email, string|null $phone_number, string $password_hash): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'INSERT INTO ordayna_main_db.users (display_name, email, phone_number, password_hash) VALUE (?,?,?,?)',
-                array($display_name, $email, $phone_number, $password_hash)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getProfile(int $uid): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT id, display_name, email, phone_number FROM users WHERE id = ?',
-                array($uid)
-            ))) === null ? null : $ret[0];
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteUserViaId(int $uid): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'DELETE FROM users WHERE id = ?',
-                array($uid),
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function changeDisplayName(int $uid, string $new_disp_name): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE users SET display_name = ? WHERE id = ?',
-                array($new_disp_name, $uid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function changePhoneNumber(int $uid, string $new_phone_number): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE users SET phone_number = ? WHERE id = ?',
-                array($new_phone_number, $uid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function changePasswordHash(int $uid, string $new_pass_hash): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE users SET password_hash = ? WHERE id = ?',
-                array($new_pass_hash, $uid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function newToken(int $uid, string $token_uuid, DateTimeImmutable $expires_after): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'INSERT INTO tokens (uid, token_uuid, expires_after) VALUE (?, ?, ?)',
-                array($uid, $token_uuid, $expires_after->format("Y-m-d H:i:s"))
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function isRevokedToken(int $uid, string $token_uuid): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS (SELECT * FROM tokens WHERE uid = ? AND token_uuid = ? AND is_revoked = TRUE)',
-                array($uid, $token_uuid)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function revokeToken(int $uid, string $token_uuid): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE tokens SET is_revoked=TRUE WHERE uid = ? AND token_uuid = ?',
-                array($uid, $token_uuid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function revokeAllTokens(int $uid): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE tokens SET is_revoked=TRUE WHERE uid = ?',
-                array($uid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function partOfIntezmeny(int $intezmeny_id, int $uid, bool $invite_must_be_accepted): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                '
-                    SELECT EXISTS(
-                        SELECT * FROM intezmeny_users
-                        WHERE intezmeny_id = ? AND users_id = ?' . ($invite_must_be_accepted === true ? ' AND invite_accepted = TRUE' : '') . '
-                    )
-                ',
-                array($intezmeny_id, $uid)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function isThisTeacher(int $intezmeny_id, int $teacher_id, int $uid): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS (SELECT * FROM teacher WHERE id = ? AND user_id = ?)',
-                array($teacher_id, $uid)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function isTeacher(int $intezmeny_id, int $uid): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'CALL isTeacher(?, ?)',
-                array($uid, $intezmeny_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function isAdmin(int $intezmeny_id, int $uid): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'CALL isAdmin(?, ?)',
-                array($uid, $intezmeny_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
     }
 
     function getIntezmenys(int $uid): array|null
@@ -1051,6 +798,8 @@ class DB
 
     function createIntezmeny(string $intezmeny_name, int $admin_uid): true|null
     {
+        global $intezmeny_tables, $intezmeny_procedures;
+        
         try {
             if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
             if ($this->handleQueryResult($this->connection->execute_query(
@@ -1070,7 +819,7 @@ class DB
                     SET FOREIGN_KEY_CHECKS = 1;
 
                     USE ordayna_intezmeny_' . $intezmeny_id . ';
-                ' . $this->intezmeny_tables . $this->intezmeny_procedures,
+                ' . $intezmeny_tables . $intezmeny_procedures,
             );
             if ($this->connection->errno !== 0) return null;
             while ($this->connection->next_result() !== false) {
@@ -1115,253 +864,4 @@ class DB
             return $this->logError(false);
         }
     }
-
-    private $intezmeny_tables = '
-        CREATE OR REPLACE TABLE class (
-            id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL
-         );
-
-        CREATE OR REPLACE TABLE group_ (
-            id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL,
-            headcount            SMALLINT UNSIGNED NOT NULL,
-            class_id             INT UNSIGNED,
-            CONSTRAINT fk_group_class FOREIGN KEY ( class_id ) REFERENCES class( id ) ON DELETE SET NULL ON UPDATE CASCADE
-         );
-
-        CREATE OR REPLACE INDEX fk_group_class ON group_ ( class_id );
-
-        CREATE OR REPLACE TABLE lesson (
-            id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL
-         );
-
-        CREATE OR REPLACE TABLE room (
-            id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) UNIQUE NOT NULL,
-            room_type            VARCHAR(200),
-            space                SMALLINT UNSIGNED NOT NULL
-         );
-
-        CREATE OR REPLACE TABLE teacher (
-            id                   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            name                 VARCHAR(200) NOT NULL,
-            job                  VARCHAR(200) NOT NULL,
-            user_id              INT UNSIGNED UNIQUE
-         );
-
-        CREATE OR REPLACE TABLE teacher_lesson (
-          teacher_id INT UNSIGNED NOT NULL,
-          lesson_id INT UNSIGNED NOT NULL,
-          CONSTRAINT fk_lesson_teacher FOREIGN KEY (lesson_id) REFERENCES lesson (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          CONSTRAINT fk_teacher_lesson FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE CASCADE,
-          PRIMARY KEY (teacher_id, lesson_id)
-        );
-
-        CREATE OR REPLACE TABLE teacher_availability (
-            id                   INT UNSIGNED     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            teacher_id           INT UNSIGNED     NOT NULL,
-            available_from_day   TINYINT UNSIGNED NOT NULL,
-            available_from_time  TIME             NOT NULL,
-            available_until_day  TINYINT UNSIGNED NOT NULL,
-            available_until_time TIME             NOT NULL,
-            CONSTRAINT fk_teacher_availability FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE CASCADE ON UPDATE CASCADE
-         );
-
-        CREATE OR REPLACE INDEX fk_teacher_availability ON teacher_availability ( teacher_id );
-
-        ALTER TABLE teacher_availability MODIFY available_from_day TINYINT UNSIGNED NOT NULL COMMENT \'0 = monday, ... , 6 = sunday\';
-
-        ALTER TABLE teacher_availability MODIFY available_until_day TINYINT UNSIGNED NOT NULL COMMENT \'0 = monday, ... , 6 = sunday\';
-
-        CREATE OR REPLACE TABLE timetable (
-            id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            duration   TIME NOT NULL,
-            day        TINYINT UNSIGNED NOT NULL,
-            from_      DATE NOT NULL,
-            until      DATE NOT NULL,
-            group_id   INT UNSIGNED DEFAULT NULL,
-            lesson_id  INT UNSIGNED DEFAULT NULL,
-            teacher_id INT UNSIGNED DEFAULT NULL,
-            room_id    INT UNSIGNED DEFAULT NULL,
-            CONSTRAINT fk_timetable_group_ FOREIGN KEY ( group_id ) REFERENCES group_( id ) ON DELETE SET NULL ON UPDATE CASCADE,
-            CONSTRAINT fk_timetable_class FOREIGN KEY ( room_id ) REFERENCES room( id ) ON DELETE SET NULL ON UPDATE CASCADE,
-            CONSTRAINT fk_timetable_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE CASCADE,
-            CONSTRAINT fk_timetable_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE SET NULL ON UPDATE CASCADE
-         );
-
-        CREATE OR REPLACE INDEX fk_timetable_group ON timetable ( group_id );
-
-        CREATE OR REPLACE INDEX fk_timetable_class ON timetable ( room_id );
-
-        CREATE OR REPLACE INDEX fk_timetable_lesson ON timetable ( lesson_id );
-
-        CREATE OR REPlACE INDEX fk_timetable_teacher ON timetable ( teacher_id );
-
-        CREATE OR REPLACE TABLE homework (
-            id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            published     DATETIME     NOT NULL DEFAULT NOW(),
-            due           DATETIME,
-            lesson_id     INT UNSIGNED,
-            teacher_id    INT UNSIGNED,
-            CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE CASCADE,
-            CONSTRAINT fk_homework_teacher FOREIGN KEY ( teacher_id ) REFERENCES teacher( id ) ON DELETE SET NULL ON UPDATE CASCADE
-        );
-
-        CREATE OR REPLACE TABLE attachments (
-            id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            homework_id INT UNSIGNED NOT NULL,
-            file_name VARCHAR(200) NOT NULL,
-            CONSTRAINT fk_attachment_homework FOREIGN KEY ( homework_id ) REFERENCES homework( id ) ON DELETE CASCADE ON UPDATE CASCADE
-        );
-    ';
-
-    private $intezmeny_procedures = '
-        CREATE OR REPLACE PROCEDURE newClass ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED )
-        BEGIN
-            INSERT INTO class (name) VALUES (in_name);
-            CALL newGroup(in_name, in_headcount, LAST_INSERT_ID());
-        END;
-
-        CREATE OR REPLACE PROCEDURE modClass ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200))
-        BEGIN
-            UPDATE class SET name=in_name WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delClass ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM class WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newGroup ( IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO group_ (name, headcount, class_id) VALUES (in_name, in_headcount, in_class_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modGroup ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_headcount SMALLINT UNSIGNED, IN in_class_id INT UNSIGNED )
-        BEGIN
-            UPDATE group_ SET name=in_name, headcount=in_headcount, class_id=in_class_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delGroup ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM group_ WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newLesson ( IN in_name VARCHAR(200) )
-        BEGIN
-            INSERT INTO lesson (name) VALUES (in_name);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modLesson ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200) )
-        BEGIN
-            UPDATE lesson SET name=in_name WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delLesson ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM lesson WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newRoom ( IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
-        BEGIN
-            INSERT INTO room (name, room_type, space) VALUES (in_name, in_room_type, in_space);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modRoom ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_room_type VARCHAR(200), IN in_space INT UNSIGNED )
-        BEGIN
-            UPDATE room SET name=in_name, room_type=in_room_type, space=in_space WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delRoom ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM room WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newTeacher ( IN in_name VARCHAR(200), IN in_job VARCHAR(200), IN in_user_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO teacher (name, job, user_id) VALUES (in_name, in_job, in_user_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modTeacher ( IN in_id INT UNSIGNED, IN in_name VARCHAR(200), IN in_job VARCHAR(200), in_user_id INT UNSIGNED )
-        BEGIN
-            UPDATE teacher SET name=in_name, job=in_job, user_id=in_user_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delTeacher ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM teacher WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newTeacher_lesson ( IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO teacher_lesson (teacher_id, lesson_id) VALUES (in_teacher_id, in_lesson_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modTeacher_lesson ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED )
-        BEGIN
-            UPDATE teacher_lesson SET teacher_id=in_teacher_id, lesson_id=in_lesson_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delTeacher_lesson ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM teacher_lesson WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newTeacher_availability ( IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )
-        BEGIN
-            INSERT INTO teacher_availability (teacher_id, available_from_day, available_from_time, available_until_day, available_until_time) VALUES (in_teacher_id, in_available_from_day, in_available_from_time, in_available_until_day, in_available_until_time);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modTeacher_availability ( IN in_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_available_from_day TINYINT UNSIGNED, IN in_available_from_time TIME, IN in_available_until_day TINYINT UNSIGNED, IN in_available_until_time TIME )
-        BEGIN
-            UPDATE teacher_availability SET teacher_id=in_teacher_id, available_from_day=in_available_from_day, available_from_time=in_available_from_time, available_until_day=in_available_until_day, available_until_time=in_available_until_time WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delTeacher_availability ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM teacher_availability WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newTimetableElement ( IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO timetable (duration, day, from_, until, group_id, lesson_id, teacher_id, room_id) VALUES (in_duration, in_day, in_from, in_until, in_group_id, in_lesson_id, in_teacher_id, in_room_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modTimetableElement ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
-        BEGIN
-            UPDATE timetable SET duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delTimetableElement ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM timetable WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newHomework ( IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
-        BEGIN
-            INSERT INTO homework (due, lesson_id, teacher_id) VALUES (in_due, in_lesson_id, in_teacher_id);
-        END;
-
-        CREATE OR REPLACE PROCEDURE modHomework ( IN in_id INT UNSIGNED, IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
-        BEGIN
-            UPDATE homework SET due=in_due, lesson_id=in_lesson_id, teacher_id=in_teacher_id WHERE in_id=id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE delHomework ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM homework WHERE id=in_id;
-        END;
-
-        CREATE OR REPLACE PROCEDURE newAttachment ( IN in_homework_id INT UNSIGNED, IN in_file_name VARCHAR(200) )
-        BEGIN
-            INSERT INTO attachments (homework_id, file_name) VALUES (in_homework_id, in_file_name);
-        END;
-
-        CREATE OR REPLACE PROCEDURE delAttachment ( IN in_id INT UNSIGNED )
-        BEGIN
-            DELETE FROM attachments WHERE id=in_id;
-        END;
-    ';
 }
