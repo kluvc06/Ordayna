@@ -37,18 +37,28 @@ function generateContentForCreate() {
     console.log("works")
 }
 
-let db=0;
+let db = 0;
 let dataArray = []; 
 
 function lockData() {
-    if (terem.value !== "" && tanar.value !== "" && targy.value !== "") {
+    if (terem.value && tanar.value && targy.value) {
         
-        let entry = `${db}. ${terem.value} | ${tanar.value} | ${targy.value} | ${day.value}`;
+        
+        const entry = {
+            id: db,
+            text: `${db}. ${terem.value} | ${tanar.value} | ${targy.value} | ${day.value}`
+        };
+
         dataArray.push(entry);
-        orarend.innerHTML = dataArray.map(item => `<option value="${db}">${item}</option>`).join("");
+
+        orarend.innerHTML = dataArray
+            .map(item => `<option value="${item.id}">${item.text}</option>`)
+            .join("");
+
         db++;
+        err.innerHTML = ""; 
     } else {
-        err.innerHTML="Hiányos adatok"
+        err.innerHTML = "Hiányos adatok";
     }
 }
    
