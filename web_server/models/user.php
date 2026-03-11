@@ -265,4 +265,44 @@ class User
             return $db->logError(false);
         }
     }
+
+    public static function inviteUser(DB $db, int $intezmeny_id, int $uid): bool|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            return $db->handleQueryResult($db->connection->execute_query(
+                'INSERT INTO intezmeny_users (intezmeny_id, users_id, role_, invite_accepted) VALUE (? ,?, "student", FALSE)',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+
+    /** Only returns true if the invite exists and is accepted */
+    public static function isInviteAccepted(DB $db, int $intezmeny_id, int $uid): bool|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $db->handleQueryResult($db->connection->execute_query(
+                'SELECT EXISTS (SELECT * FROM intezmeny_users WHERE intezmeny_id = ? AND users_id = ? AND invite_accepted = TRUE)',
+                array($intezmeny_id, $uid)
+            ))) === null ? null : $ret[0][0] === 1;
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+
+    public static function acceptInvite(DB $db, int $intezmeny_id, int $uid): true|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            return $db->handleQueryResult($db->connection->execute_query(
+                'UPDATE intezmeny_users SET invite_accepted=TRUE WHERE intezmeny_id = ? AND users_id = ?',
+                array($intezmeny_id, $uid)
+            ));
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
 }

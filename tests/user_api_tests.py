@@ -280,8 +280,8 @@ def createIntezmeny():
     testEndpoint("Create intezmeny, method is not POST", "PATCH", "/create_intezmeny", access_jar, {"intezmeny_name": "tester_intezmeny"}, 405, "")
 
     response = testEndpointNoErrorHandling("GET", "/get_intezmenys", access_jar, {})
-    intezmeny_id = response.json()[len(response.json()) - 1][0]
-    handleApiError("Get intezmenys", response, 200, f"[[{intezmeny_id},\"tester_intezmeny\"]]")
+    intezmeny_id = response.json()[len(response.json()) - 1]["id"]
+    handleApiError("Get intezmenys", response, 200, '[{"id":' + f'{intezmeny_id}' + ',"name":"tester_intezmeny"}]')
     testToken("Get intezmenys", "GET", "/get_intezmenys", {}, wrong_access_jar)
     testEndpoint("Get intezmenys, method is not GET", "PATCH", "/get_intezmenys", access_jar, {}, 405, "")
 
@@ -704,7 +704,7 @@ def intezmenyGetEndpoints():
 
     testEndpoint("Get timetable", "POST", "/intezmeny/get/timetable", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 200,
-                 '[["1","03:03:03","5","2021-11-23","2021-11-24","1","1","1","1"],["2","03:03:03","5","2021-11-23","2021-11-24",null,"1","1","1"],["3","03:03:03","5","2021-11-23","2021-11-24","1",null,"1","1"],["4","03:03:03","5","2021-11-23","2021-11-24","1","1",null,"1"],["5","03:03:03","5","2021-11-23","2021-11-24","1","1","1",null],["6","02:02:02","4","2020-12-24","2020-12-25","1","1","1","1"]]')
+                 '[{"id":1,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null},{"id":6,"duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1}]')
     testId("Get timetable", "POST", "/intezmeny/get/timetable", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get timetable", "POST", "/intezmeny/get/timetable", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get timetable, method not POST", "PATCH", "/intezmeny/get/timetable", access_jar,

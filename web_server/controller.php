@@ -14,6 +14,8 @@ require_once "models/lesson.php";
 require_once "models/teacher.php";
 require_once "models/homework.php";
 require_once "models/attachment.php";
+require_once "models/intezmeny.php";
+require_once "models/timetable_element.php";
 
 use Class_\Class_;
 use DB\DB;
@@ -26,6 +28,8 @@ use User\User;
 use Lesson\Lesson;
 use Homework\Homework;
 use Attachment\Attachment;
+use Intezmeny\Intezmeny;
+use Timetable\TimetableElement;
 use ValueError;
 
 use Lcobucci\JWT\Token\RegisteredClaims;
@@ -209,7 +213,7 @@ class Controller
         if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
 
         if (User::deleteUser($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
-        if ($db->deleteOrphanedIntezmenys() === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Intezmeny::deleteOrphanedIntezmenys($db) === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (User::revokeAllTokens($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -342,7 +346,7 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        if ($db->createIntezmeny($intezmeny_name, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Intezmeny::createIntezmeny($db, $intezmeny_name, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -371,7 +375,7 @@ class Controller
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteIntezmeny($intezmeny_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Intezmeny::deleteIntezmeny($db, $intezmeny_id) === null) return handleReturn(ControllerRet::unexpected_error);
         if (rmdirRecursive("user_data/intezmeny_$intezmeny_id") === false) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
@@ -387,7 +391,7 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        $ret = $db->getIntezmenys($token->claims()->get("uid"));
+        $ret = Intezmeny::getIntezmenys($db, $token->claims()->get("uid"));
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
@@ -433,7 +437,7 @@ class Controller
         if ($ret === true) return handleReturn(ControllerRet::already_exists);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->inviteUser($intezmeny_id, $invited_user->id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (User::inviteUser($db, $intezmeny_id, $invited_user->id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success);
     }
@@ -445,11 +449,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id, $uid) = $ret;
 
-        $ret = $db->isInviteAccepted($intezmeny_id, $uid);
+        $ret = User::isInviteAccepted($db, $intezmeny_id, $uid);
         if ($ret === true) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->acceptInvite($intezmeny_id, $uid) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (User::acceptInvite($db, $intezmeny_id, $uid) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success);
     }
@@ -624,7 +628,8 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if ($db->createTimetableElement(
+        if (TimetableElement::createTimetableElement(
+            $db,
             $intezmeny_id,
             $duration->format("H:i:s"),
             $day,
@@ -799,11 +804,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->timetableElementExists($intezmeny_id, $timetable_element_id);
+        $ret = TimetableElement::timetableElementExists($db, $intezmeny_id, $timetable_element_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteTimetableElement($intezmeny_id, $timetable_element_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (TimetableElement::deleteTimetableElement($db, $intezmeny_id, $timetable_element_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -1018,7 +1023,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->timetableElementExists($intezmeny_id, $element_id);
+        $ret = TimetableElement::timetableElementExists($db, $intezmeny_id, $element_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($group_id !== null) {
@@ -1042,7 +1047,8 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if ($db->updateTimetableElement(
+        if (TimetableElement::updateTimetableElement(
+            $db,
             $intezmeny_id,
             $element_id,
             $duration->format("H:i:s"),
@@ -1186,7 +1192,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getTimetable($intezmeny_id);
+        $ret = TimetableElement::getTimetable($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
