@@ -10,18 +10,26 @@ require_once "models/user.php";
 require_once "models/class.php";
 require_once "models/group.php";
 require_once "models/room.php";
+require_once "models/lesson.php";
+require_once "models/teacher.php";
+require_once "models/homework.php";
+require_once "models/attachment.php";
 
 use Class_\Class_;
 use DB\DB;
 use JWT\JWT;
 use DateTimeImmutable;
 use Group\Group;
+use Room\Room;
+use Teacher\Teacher;
+use User\User;
+use Lesson\Lesson;
+use Homework\Homework;
+use Attachment\Attachment;
 use ValueError;
 
 use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\UnencryptedToken;
-use Room\Room;
-use User\User;
 
 /** 20 mebibytes */
 static $max_file_size = 1024 * 1024 * 20;
@@ -133,7 +141,8 @@ class Controller
         if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
         $new_access_token = $jwt->createAccessToken($token->claims()->get("uid"));
 
-        if (User::newToken($db,
+        if (User::newToken(
+            $db,
             $new_access_token->claims()->get("uid"),
             $new_access_token->claims()->get(RegisteredClaims::ID),
             $new_access_token->claims()->get(RegisteredClaims::EXPIRATION_TIME)
@@ -505,11 +514,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->lessonExistsViaName($intezmeny_id, $name);
+        $ret = Lesson::lessonExistsViaName($db, $intezmeny_id, $name);
         if ($ret === true) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->createLesson($intezmeny_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Lesson::createLesson($db, $intezmeny_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -560,7 +569,7 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if ($db->createTeacher($intezmeny_id, $name, $job, $teacher_uid) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Teacher::createTeacher($db, $intezmeny_id, $name, $job, $teacher_uid) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -600,12 +609,12 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($lesson_id !== null) {
-            $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($teacher_id !== null) {
-            $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -633,6 +642,8 @@ class Controller
     public static function createHomework(): null
     {
         $data = json_decode(file_get_contents("php://input"));
+        $description = Controller::validateString(@$data->description, max_chars: 500);
+        if ($description === null) return handleReturn(ControllerRet::bad_request);
         $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
         if ($due === false) $due = null;
@@ -647,17 +658,17 @@ class Controller
         list($db, $intezmeny_id) = $ret;
 
         if ($lesson_id !== null) {
-            $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($teacher_id !== null) {
-            $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if ($db->createHomework($intezmeny_id, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Homework::createHomework($db, $intezmeny_id, $description, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -675,14 +686,14 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->homeworkExists($intezmeny_id, $homework_id);
+        $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $attachment_id = $db->createAttachment($intezmeny_id, $homework_id, $file_name);
+        $attachment_id = Attachment::createAttachment($db, $intezmeny_id, $homework_id, $file_name);
         if ($attachment_id === null) return handleReturn(ControllerRet::unexpected_error);
         if (file_force_contents("user_data/intezmeny_$intezmeny_id/" . $file_name . "_$attachment_id", $file_contents) === false) {
-            if ($db->deleteAttachment($intezmeny_id, $attachment_id) === null) return handleReturn(ControllerRet::unexpected_error);
+            if (Attachment::deleteAttachment($db, $intezmeny_id, $attachment_id) === null) return handleReturn(ControllerRet::unexpected_error);
             return handleReturn(ControllerRet::unexpected_error);
         }
 
@@ -716,11 +727,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+        $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteLesson($intezmeny_id, $lesson_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Lesson::deleteLesson($db, $intezmeny_id, $lesson_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -770,11 +781,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+        $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->deleteTeacher($intezmeny_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Teacher::deleteTeacher($db, $intezmeny_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -806,17 +817,17 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->homeworkExists($intezmeny_id, $homework_id);
+        $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $attachments = $db->getHomeworkAttachments($intezmeny_id, $homework_id);
+        $attachments = Attachment::getHomeworkAttachments($db, $intezmeny_id, $homework_id);
         if ($attachments === null) return handleReturn(ControllerRet::unexpected_error);
 
         for ($i = 0; $i < count($attachments); $i++) {
             if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachments[$i][1] . "_" . $attachments[$i][0]) === false) return handleReturn(ControllerRet::unexpected_error);
         }
-        if ($db->deleteHomework($intezmeny_id, $homework_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Homework::deleteHomework($db, $intezmeny_id, $homework_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -830,15 +841,15 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
+        $ret = Attachment::attachmentExists($db, $intezmeny_id, $attachment_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
+        $attachment_name = Attachment::getAttachmentName($db, $intezmeny_id, $attachment_id);
         if ($attachment_name === null) return handleReturn(ControllerRet::unexpected_error);
 
         if (unlink("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id) === false) return handleReturn(ControllerRet::unexpected_error);
-        if ($db->deleteAttachment($intezmeny_id, $attachment_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Attachment::deleteAttachment($db, $intezmeny_id, $attachment_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -874,11 +885,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+        $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        if ($db->updateLesson($intezmeny_id, $lesson_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Lesson::updateLesson($db, $intezmeny_id, $lesson_id, $name) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -954,7 +965,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+        $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -971,7 +982,7 @@ class Controller
             }
         }
 
-        if ($db->updateTeacher($intezmeny_id, $teacher_id, $name, $job, $teacher_uid) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Teacher::updateTeacher($db, $intezmeny_id, $teacher_id, $name, $job, $teacher_uid) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }
@@ -1016,12 +1027,12 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($lesson_id !== null) {
-            $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($teacher_id !== null) {
-            $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
@@ -1052,6 +1063,8 @@ class Controller
         $data = json_decode(file_get_contents("php://input"));
         $homework_id = Controller::validateInteger(@$data->homework_id);
         if ($homework_id === null) return handleReturn(ControllerRet::bad_request);
+        $description = Controller::validateString(@$data->description, max_chars: 500);
+        if ($description === null) return handleReturn(ControllerRet::bad_request);
         $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
         if ($due === false) $due = null;
@@ -1065,23 +1078,25 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->homeworkExists($intezmeny_id, $homework_id);
+        $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($lesson_id !== null) {
-            $ret = $db->lessonExists($intezmeny_id, $lesson_id);
+            $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
         if ($teacher_id !== null) {
-            $ret = $db->teacherExists($intezmeny_id, $teacher_id);
+            $ret = Teacher::teacherExists($db, $intezmeny_id, $teacher_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if ($db->updateHomework(
+        if (Homework::updateHomework(
+            $db,
             $intezmeny_id,
             $homework_id,
+            $description,
             $due !== null ? $due->format("Y-m-d h:i:s") : null,
             $lesson_id,
             $teacher_id
@@ -1126,7 +1141,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getLessons($intezmeny_id);
+        $ret = Lesson::getLessons($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
@@ -1156,7 +1171,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getTeachers($intezmeny_id);
+        $ret = Teacher::getTeachers($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
@@ -1186,7 +1201,7 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->getHomeworks($intezmeny_id);
+        $ret = Homework::getHomeworks($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
         header('Content-Type: application/json');
@@ -1204,11 +1219,11 @@ class Controller
         if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
         list($db, $intezmeny_id) = $ret;
 
-        $ret = $db->attachmentExists($intezmeny_id, $attachment_id);
+        $ret = Attachment::attachmentExists($db, $intezmeny_id, $attachment_id);
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
 
-        $attachment_name = $db->getAttachmentName($intezmeny_id, $attachment_id);
+        $attachment_name = Attachment::getAttachmentName($db, $intezmeny_id, $attachment_id);
         if ($attachment_id === null) return handleReturn(ControllerRet::unexpected_error);
 
         $file_contents = file_get_contents("user_data/intezmeny_$intezmeny_id/" . $attachment_name . "_" . $attachment_id);

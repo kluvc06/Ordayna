@@ -99,45 +99,6 @@ class DB
         }
     }
 
-    function lessonExists(int $intezmeny_id, int $lesson_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM lesson WHERE id = ?)',
-                array($lesson_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function lessonExistsViaName(int $intezmeny_id, string $lesson_name): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM lesson WHERE name = ?);',
-                array($lesson_name)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function teacherExists(int $intezmeny_id, int $teacher_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM teacher WHERE id = ?)',
-                array($teacher_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function timetableElementExists(int $intezmeny_id, int $timetable_element_id): bool|null
     {
         try {
@@ -145,32 +106,6 @@ class DB
             return ($ret = $this->handleQueryResult($this->connection->execute_query(
                 'SELECT EXISTS(SELECT * FROM timetable WHERE id = ?)',
                 array($timetable_element_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function homeworkExists(int $intezmeny_id, int $homework_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM homework WHERE id = ?)',
-                array($homework_id)
-            ))) === null ? null : $ret[0][0] === 1;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function attachmentExists(int $intezmeny_id, int $attachment_id): bool|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT EXISTS(SELECT * FROM attachments WHERE id = ?)',
-                array($attachment_id)
             ))) === null ? null : $ret[0][0] === 1;
         } catch (Exception) {
             return $this->logError(false);
@@ -217,37 +152,6 @@ class DB
         }
     }
 
-    function createLesson(int $intezmeny_id, string $name): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL newLesson(?)',
-                array($name)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function createTeacher(int $intezmeny_id, string $name, string $job, int|null $uid): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            if ($this->handleQueryResult($this->connection->execute_query(
-                'CALL newTeacher(?, ?, ?)',
-                array($name, $job, $uid)
-            )) === null) return null;
-            if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'UPDATE intezmeny_users SET role_="teacher" WHERE intezmeny_id = ? AND users_id = ?',
-                array($intezmeny_id, $uid)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function createTimetableElement(
         int $intezmeny_id,
         string $duration,
@@ -270,78 +174,6 @@ class DB
         }
     }
 
-    function createHomework(int $intezmeny_id, string|null $due, int|null $lesson_id, int|null $teacher_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL newHomework(?, ?, ?)',
-                array($due, $lesson_id, $teacher_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    /**
-     * Returns the new attachments id
-     */
-    function createAttachment(int $intezmeny_id, int $homework_id, string $file_name): int|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            if ($this->handleQueryResult($this->connection->execute_query(
-                'CALL newAttachment(?, ?)',
-                array($homework_id, $file_name)
-            )) === null) return null;
-            // Have to make an sql query here since calling a procedure overwrites mysqli_insert_id
-            return ($ret = $this->handleQueryResult(
-                $this->connection->query("SELECT LAST_INSERT_ID()")
-            )) === null ? null : (int) $ret[0][0];
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteLesson(int $intezmeny_id, int $lesson_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delLesson(?)',
-                array($lesson_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteTeacher(int $intezmeny_id, int $teacher_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            $ret = $this->handleQueryResult($this->connection->execute_query('SELECT user_id FROM teacher WHERE id = ?', array($teacher_id)));
-            if ($ret === null) return null;
-            $teacher_uid = $ret[0][0];
-
-            if ($teacher_uid !== null) {
-                if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-                if ($this->handleQueryResult($this->connection->execute_query(
-                    'UPDATE intezmeny_users SET role_ = "student" WHERE intezmeny_id = ? and users_id = ?',
-                    array($intezmeny_id, $teacher_uid)
-                )) === null) return null;
-                if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            }
-
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delTeacher(?)',
-                array($teacher_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function deleteTimetableElement(int $intezmeny_id, int $timetable_element_id): true|null
     {
         try {
@@ -349,78 +181,6 @@ class DB
             return $this->handleQueryResult($this->connection->execute_query(
                 'CALL delTimetableElement(?)',
                 array($timetable_element_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteHomework(int $intezmeny_id, int $homework_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delHomework(?)',
-                array($homework_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function deleteAttachment(int $intezmeny_id, int $attachment_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL delAttachment(?)',
-                array($attachment_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function updateLesson(int $intezmeny_id, int $lesson_id, string $name): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modLesson(?, ?)',
-                array($lesson_id, $name)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function updateTeacher(int $intezmeny_id, int $teacher_id, string $name, string $job, int|null $uid): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            $original_uid = ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT user_id FROM teacher WHERE id = ?',
-                array($teacher_id)
-            ))) === null ? null : $ret[0][0];
-            if ($original_uid !== $uid) {
-                if ($this->logError($this->connection->select_db('ordayna_main_db')) === null) return null;
-                if ($original_uid !== null) {
-                    if ($this->handleQueryResult($this->connection->execute_query(
-                        'UPDATE intezmeny_users SET role_="student" WHERE intezmeny_id = ? AND users_id = ?;',
-                        array($intezmeny_id, $original_uid)
-                    )) === null) return null;
-                }
-                if ($uid !== null) {
-                    if ($this->handleQueryResult($this->connection->execute_query(
-                        'UPDATE intezmeny_users SET role_="teacher" WHERE intezmeny_id = ? AND users_id = ?;',
-                        array($intezmeny_id, $uid)
-                    )) === null) return null;
-                }
-                if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            }
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modTeacher(?, ?, ?, ?)',
-                array($teacher_id, $name, $job, $uid)
             ));
         } catch (Exception) {
             return $this->logError(false);
@@ -450,117 +210,11 @@ class DB
         }
     }
 
-    function updateHomework(int $intezmeny_id, int $homework_id, string|null $due, int|null $lesson_id, int|null $teacher_id): true|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->execute_query(
-                'CALL modHomework(?, ?, ?, ?)',
-                array($homework_id, $due, $lesson_id, $teacher_id)
-            ));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getLessons(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return $this->handleQueryResult($this->connection->query("SELECT id, name FROM lesson"));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getTeachers(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            $ret = $this->handleQueryResult($this->connection->query("SELECT * FROM teacher"));
-            if ($ret === null) return null;
-            $teachers = $ret;
-            for ($i = 0; $i < count($teachers); $i++) {
-                $ret = $this->handleQueryResult($this->connection->execute_query(
-                    '
-                        SELECT * FROM teacher_lesson
-                        LEFT JOIN lesson ON lesson.id = teacher_lesson.lesson_id
-                        WHERE teacher_lesson.teacher_id = ?
-                    ',
-                    array($teachers[$i][0])
-                ));
-                if ($ret === null) return null;
-                array_push($teachers[$i], $ret);
-                $ret = $this->handleQueryResult($this->connection->execute_query(
-                    "SELECT * FROM teacher_availability WHERE teacher_id = ?",
-                    array($teachers[$i][0])
-                ));
-                if ($ret === null) return null;
-                array_push($teachers[$i], $ret);
-            }
-            return $teachers;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
     function getTimetable(int $intezmeny_id): array|null
     {
         try {
             if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
             return $this->handleQueryResult($this->connection->query("SELECT * FROM timetable"));
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getHomeworkAttachments(int $intezmeny_id, int $homework_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                'SELECT attachments.id, file_name FROM homework LEFT JOIN attachments on homework.id = homework_id WHERE homework.id = ?',
-                array($homework_id)
-            ))) === null ? null : $ret;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getHomeworks(int $intezmeny_id): array|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            $ret = $this->handleQueryResult($this->connection->query('
-                SELECT homework.id, published, due, lesson.name, teacher.name
-                FROM homework
-                LEFT JOIN lesson ON lesson.id = lesson_id
-                LEFT JOIN teacher ON teacher.id = teacher_id
-            '));
-            if ($ret === null) return null;
-            $homeworks = $ret;
-            for ($i = 0; $i < count($homeworks); $i++) {
-                $ret = $this->handleQueryResult($this->connection->execute_query(
-                    "SELECT id, file_name FROM attachments WHERE homework_id = ?",
-                    array($homeworks[$i][0])
-                ));
-                if ($ret === null) return null;
-                array_push($homeworks[$i], $ret);
-            }
-            return $homeworks;
-        } catch (Exception) {
-            return $this->logError(false);
-        }
-    }
-
-    function getAttachmentName(int $intezmeny_id, int $attachment_id): string|null
-    {
-        try {
-            if ($this->logError($this->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            return ($ret = $this->handleQueryResult($this->connection->execute_query(
-                "SELECT file_name FROM attachments WHERE id = ?",
-                array($attachment_id)
-            ))) === null ? null : $ret[0][0];
         } catch (Exception) {
             return $this->logError(false);
         }
