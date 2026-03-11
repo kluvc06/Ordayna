@@ -280,8 +280,8 @@ def createIntezmeny():
     testEndpoint("Create intezmeny, method is not POST", "PATCH", "/create_intezmeny", access_jar, {"intezmeny_name": "tester_intezmeny"}, 405, "")
 
     response = testEndpointNoErrorHandling("GET", "/get_intezmenys", access_jar, {})
-    intezmeny_id = response.json()[len(response.json()) - 1][0]
-    handleApiError("Get intezmenys", response, 200, f"[[{intezmeny_id},\"tester_intezmeny\"]]")
+    intezmeny_id = response.json()[len(response.json()) - 1]["id"]
+    handleApiError("Get intezmenys", response, 200, '[{"id":' + f'{intezmeny_id}' + ',"name":"tester_intezmeny"}]')
     testToken("Get intezmenys", "GET", "/get_intezmenys", {}, wrong_access_jar)
     testEndpoint("Get intezmenys, method is not GET", "PATCH", "/get_intezmenys", access_jar, {}, 405, "")
 
@@ -317,8 +317,8 @@ def inviteEndpoints():
     testToken("Get profile", "GET", "/user/profile", {}, wrong_access_jar)
     testEndpoint("Get profile, method is not GET", "PATCH", "/user/profile", teacher_access_jar, {}, 405, "")
     response = testEndpointNoErrorHandling("GET", "/user/profile", teacher_access_jar, {})
-    handleApiError("Get profile", response, 200, f"[{response.json()[0]},\"tester\",\"tester_teacher@test.com\",\"123456789012345\"]")
-    teacher_uid = response.json()[0]
+    handleApiError("Get profile", response, 200, '{"id":' + f'{response.json()["id"]}' + ',"display_name":"tester","email":"tester_teacher@test.com","phone_number":"123456789012345"}')
+    teacher_uid = response.json()["id"]
 
 
 def intezmenyCreateEndpoints():
@@ -446,28 +446,28 @@ def intezmenyCreateEndpoints():
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 201, "")
 
     testEndpoint("Create homework", "POST", "/intezmeny/create/homework", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"},
+                 {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"},
                  201, "")
     testEndpoint("Create homework, already exists", "POST", "/intezmeny/create/homework", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"},
+                 {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"},
                  201, "")
     testId("Create homework", "POST", "/intezmeny/create/homework",
-           {"due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"}, access_jar, "intezmeny_id", False, 201, True)
-    testDateTime("Create homework", "POST", "/intezmeny/create/homework", {"intezmeny_id": f"{intezmeny_id}", "lesson_id": "1", "teacher_id": "1"},
-                 access_jar, "due", True, 201, True, True)
+           {"description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"}, access_jar, "intezmeny_id", False, 201, True)
+    testString("Create homework", "POST", "/intezmeny/create/homework",
+                 {"intezmeny_id": f"{intezmeny_id}", "lesson_id": "1", "teacher_id": "1"}, access_jar, "description", False, 201)
+    testDateTime("Create homework", "POST", "/intezmeny/create/homework",
+                 {"intezmeny_id": f"{intezmeny_id}", "description": "test", "lesson_id": "1", "teacher_id": "1"}, access_jar, "due", True, 201, True, True)
     testId("Create homework", "POST", "/intezmeny/create/homework",
-           {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "teacher_id": "1"}, access_jar, "lesson_id", True, 201, False)
+           {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "teacher_id": "1"}, access_jar, "lesson_id", True, 201, False)
     testId("Create homework", "POST", "/intezmeny/create/homework",
-           {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "lesson_id": "1"}, access_jar, "teacher_id", True, 201, False)
+           {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1"}, access_jar, "teacher_id", True, 201, False)
     testToken("Create homework", "POST", "/intezmeny/create/homework",
-              {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"}, wrong_access_jar)
+              {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"}, wrong_access_jar)
     testEndpoint("Create homework, method is not POST", "PATCH", "/intezmeny/create/homework", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"},
-                 405, "")
+                 {"intezmeny_id": f"{intezmeny_id}", "description": "test", "due": "2020-12-24 02:02:02", "lesson_id": "1", "teacher_id": "1"}, 405, "")
     
     testEndpoint("Create attachment", "POST", "/intezmeny/create/attachment", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "file_name": "test_file", "file_contents": "test_text test_text\ntest_text"},
-                 201, "")
+                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "file_name": "test_file", "file_contents": "test_text test_text\ntest_text"}, 201, "")
     testId("Create attachment", "POST", "/intezmeny/create/attachment",
            {"homework_id": "1", "file_name": "test_file", "file_contents": "test_text test_text\ntest_text"}, access_jar, "intezmeny_id", False, 201, True)
     testId("Create attachment", "POST", "/intezmeny/create/attachment",
@@ -635,22 +635,30 @@ def intezmenyUpdateEndpoints():
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 204, "")
 
     testId("Update homework", "POST", "/intezmeny/update/homework",
-           {"homework_id": "1", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"}, access_jar, "intezmeny_id", False, 204, True)
+           {"homework_id": "1", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
+           access_jar, "intezmeny_id", False, 204, True)
     testId("Update homework", "POST", "/intezmeny/update/homework",
-           {"intezmeny_id": f"{intezmeny_id}", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"}, access_jar, "intezmeny_id", False, 204, False)
-    testDateTime("Update homework", "POST", "/intezmeny/update/homework", {"intezmeny_id": f"{intezmeny_id}", "homework_id": "2", "lesson_id": "1", "teacher_id": "1"},
+           {"intezmeny_id": f"{intezmeny_id}", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
+           access_jar, "intezmeny_id", False, 204, False)
+    testString("Update homework", "POST", "/intezmeny/update/homework",
+               {"intezmeny_id": f"{intezmeny_id}", "homework_id": "2", "lesson_id": "1", "teacher_id": "1"},
+               access_jar, "description", False, 204)
+    testDateTime("Update homework", "POST", "/intezmeny/update/homework",
+                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "2", "description": "test_updated", "lesson_id": "1", "teacher_id": "1"},
                  access_jar, "due", True, 204, True, True)
     testId("Update homework", "POST", "/intezmeny/update/homework",
-           {"intezmeny_id": f"{intezmeny_id}", "homework_id": "3", "due": "2021-11-23 03:03:03", "teacher_id": "1"}, access_jar, "lesson_id", True, 204, False)
+           {"intezmeny_id": f"{intezmeny_id}", "homework_id": "3", "description": "test_updated", "due": "2021-11-23 03:03:03", "teacher_id": "1"},
+           access_jar, "lesson_id", True, 204, False)
     testId("Update homework", "POST", "/intezmeny/update/homework",
-           {"intezmeny_id": f"{intezmeny_id}", "homework_id": "4", "due": "2021-11-23 03:03:03", "lesson_id": "1"}, access_jar, "teacher_id", True, 204, False)
+           {"intezmeny_id": f"{intezmeny_id}", "homework_id": "4", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1"},
+           access_jar, "teacher_id", True, 204, False)
     testToken("Update homework", "POST", "/intezmeny/update/homework",
-              {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"}, wrong_access_jar)
+              {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"}, wrong_access_jar)
     testEndpoint("Update homework, method is not POST", "PATCH", "/intezmeny/update/homework", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
+                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
                  405, "")
     testEndpoint("Update homework", "POST", "/intezmeny/update/homework", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
+                 {"intezmeny_id": f"{intezmeny_id}", "homework_id": "1", "description": "test_updated", "due": "2021-11-23 03:03:03", "lesson_id": "1", "teacher_id": "1"},
                  204, "")
 
 
@@ -660,35 +668,35 @@ def intezmenyGetEndpoints():
     global intezmeny_id
 
     testEndpoint("Get classes", "POST", "/intezmeny/get/classes", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_class_updated"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_class_updated"}]')
     testId("Get classes", "POST", "/intezmeny/get/classes", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get classes", "POST", "/intezmeny/get/classes", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get classes, method not POST", "PATCH", "/intezmeny/get/classes", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get lessons", "POST", "/intezmeny/get/lessons", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_lesson_updated"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_lesson_updated"}]')
     testId("Get lessons", "POST", "/intezmeny/get/lessons", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get lessons", "POST", "/intezmeny/get/lessons", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get lessons, method not POST", "PATCH", "/intezmeny/get/lessons", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get groups", "POST", "/intezmeny/get/groups", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_group_updated","40","1","test_class_updated"],["2","test_group_updated_no_class_id","40",null,null],["3","test_group","30","1","test_class_updated"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_group_updated","headcount":40,"class":{"id":1,"name":"test_class_updated"}},{"id":2,"name":"test_group_updated_no_class_id","headcount":40,"class":null},{"id":3,"name":"test_group","headcount":30,"class":{"id":1,"name":"test_class_updated"}}]')
     testId("Get groups", "POST", "/intezmeny/get/groups", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get groups", "POST", "/intezmeny/get/groups", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get groups, method not POST", "PATCH", "/intezmeny/get/groups", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get rooms", "POST", "/intezmeny/get/rooms", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[["1","test_room_updated","test_updated","40"],["2","test_room_updated_no_type",null,"40"]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_room_updated","type":"test_updated","space":40},{"id":2,"name":"test_room_updated_no_type","type":null,"space":40}]')
     testId("Get rooms", "POST", "/intezmeny/get/rooms", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get rooms", "POST", "/intezmeny/get/rooms", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get rooms, method not POST", "PATCH", "/intezmeny/get/rooms", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get teachers", "POST", "/intezmeny/get/teachers", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200, f'[["1","test_teacher_updated_no_user","test_updated",null,[],[]],["2","test_teacher_updated","test_updated","{teacher_uid}",[],[]]]')
+                 {"intezmeny_id": f"{intezmeny_id}"}, 200, '[{"id":1,"name":"test_teacher_updated_no_user","job":"test_updated","uid":0,"lessons":[],"availabilitys":[]},{"id":2,"name":"test_teacher_updated","job":"test_updated","uid":' + f'{teacher_uid}' + ',"lessons":[],"availabilitys":[]}]')
     testId("Get teachers", "POST", "/intezmeny/get/teachers", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get teachers", "POST", "/intezmeny/get/teachers", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get teachers, method not POST", "PATCH", "/intezmeny/get/teachers", access_jar,
@@ -696,14 +704,14 @@ def intezmenyGetEndpoints():
 
     testEndpoint("Get timetable", "POST", "/intezmeny/get/timetable", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 200,
-                 '[["1","03:03:03","5","2021-11-23","2021-11-24","1","1","1","1"],["2","03:03:03","5","2021-11-23","2021-11-24",null,"1","1","1"],["3","03:03:03","5","2021-11-23","2021-11-24","1",null,"1","1"],["4","03:03:03","5","2021-11-23","2021-11-24","1","1",null,"1"],["5","03:03:03","5","2021-11-23","2021-11-24","1","1","1",null],["6","02:02:02","4","2020-12-24","2020-12-25","1","1","1","1"]]')
+                 '[{"id":1,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null},{"id":6,"duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1}]')
     testId("Get timetable", "POST", "/intezmeny/get/timetable", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get timetable", "POST", "/intezmeny/get/timetable", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get timetable, method not POST", "PATCH", "/intezmeny/get/timetable", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     response = testEndpointNoErrorHandling("POST", "/intezmeny/get/homeworks", access_jar, {"intezmeny_id": f"{intezmeny_id}"})
-    handleApiError("Get homeworks", response, 200, f'[["1","{response.json()[0][1]}","2021-11-23 03:03:03","test_lesson_updated","test_teacher_updated_no_user",[[1,"test_file"],[2,"test_file"],[3,"test_file"]]],["2","{response.json()[1][1]}",null,"test_lesson_updated","test_teacher_updated_no_user",[]],["3","{response.json()[2][1]}","2021-11-23 03:03:03",null,"test_teacher_updated_no_user",[]],["4","{response.json()[3][1]}","2021-11-23 03:03:03","test_lesson_updated",null,[]],["5","{response.json()[4][1]}","2020-12-24 02:02:02","test_lesson_updated",null,[]]]')
+    handleApiError("Get homeworks", response, 200, '[{"id":1,"description":"test_updated","published":"' + response.json()[0]["published"] + '","due":"2021-11-23 03:03:03","lesson":{"id":1,"name":"test_lesson_updated"},"teacher":{"id":1,"name":"test_teacher_updated_no_user"},"attachments":[{"id":1,"file_name":"test_file"},{"id":2,"file_name":"test_file"},{"id":3,"file_name":"test_file"}]},{"id":2,"description":"test_updated","published":"' + response.json()[1]["published"] + '","due":null,"lesson":{"id":1,"name":"test_lesson_updated"},"teacher":{"id":1,"name":"test_teacher_updated_no_user"},"attachments":[]},{"id":3,"description":"test_updated","published":"' + response.json()[2]["published"] + '","due":"2021-11-23 03:03:03","lesson":null,"teacher":{"id":1,"name":"test_teacher_updated_no_user"},"attachments":[]},{"id":4,"description":"test_updated","published":"' + response.json()[3]["published"] + '","due":"2021-11-23 03:03:03","lesson":{"id":1,"name":"test_lesson_updated"},"teacher":null,"attachments":[]},{"id":5,"description":"test","published":"' + response.json()[4]["published"] + '","due":"2020-12-24 02:02:02","lesson":{"id":1,"name":"test_lesson_updated"},"teacher":null,"attachments":[]}]')
     testId("Get homeworks", "POST", "/intezmeny/get/homeworks", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get homeworks", "POST", "/intezmeny/get/homeworks", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get homeworks, method not POST", "PATCH", "/intezmeny/get/homeworks", access_jar,
