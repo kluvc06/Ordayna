@@ -10,6 +10,7 @@ const display= document.getElementById("og_display");
 const email= document.getElementById("mail_add");
 const tel= document.getElementById("og_tel");
 const img= document.getElementById("pfp");
+const hide= document.getElementById("hide");
 
 
 function loadUserData(){
@@ -19,4 +20,24 @@ function loadUserData(){
     img.innerHTML=usre.img;
 }
 
+function hide_show(){
+    hide.style="display:block"
+}
+
+function changePfp(a){
+    switch(a){
+        case 1:
+            img.innerHTML='<img src="img\\img'+a+'.jpg" alt="pfp" >'
+        case 2:
+            img.innerHTML='<img src="img\\img'+a+'.jpg" alt="pfp" >'
+        case 3:
+            img.innerHTML='<img src="img\\img'+a+'.jpg" alt="pfp" >'
+        case 0:
+            hide.style="display:none"
+
+
+
+    }
+
+}
 

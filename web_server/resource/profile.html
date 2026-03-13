@@ -29,7 +29,11 @@
                     <div class="col"><div class="box-smallest-nb" id="pfp"></div></div>
                     <div class="col"><div class="box-tiny-nb">
                         Profilkép:
-                        <button class="change">[Megváltoztatás]</button>
+                        <button onclick="hide_show()" class="change">[Megváltoztatás]</button>
+                        <br><span id="hide" style="display: none; ">
+                            <button onclick="changePfp(1)" class="pfp_ch">1</button><button onclick="changePfp(2)" class="pfp_ch">2</button><button onclick="changePfp(3)" class="pfp_ch">3</button>
+                            
+                        </span>
                     </div></div>
                 </div>
                 <div class="col-8">
