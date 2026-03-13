@@ -43,6 +43,9 @@ div{
     width: 170px;
     margin: 0 auto;
     margin-top: 5%;
+    h2{
+        text-align: center;
+    }
 }
 
 #center_align_home {
