@@ -89,7 +89,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
@@ -127,7 +127,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
@@ -160,7 +160,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
@@ -217,7 +217,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
         header(
@@ -227,7 +227,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
@@ -264,7 +264,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
         header(
@@ -274,7 +274,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
@@ -355,7 +355,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
         header(
@@ -365,7 +365,7 @@ class Controller
                 . (php_sapi_name() === "cli-server" ? '' : '; Secure')
                 . '; SameSite=Strict'
                 . '; HttpOnly'
-                . '; Partitioned',
+                . (php_sapi_name() === "cli-server" ? '' : '; Partitioned'),
             false
         );
 
