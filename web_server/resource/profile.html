@@ -70,7 +70,10 @@
     </div>
     <button onclick="signout()" id="signout_button">Kilépés</button>
   </div>
-  <br><button onclick="location.href='index.php'" id="home_button">home</button>
+  <br><button onclick="location.href='index.php'" id="home_button">home</button><br>
+  <input type="text" id="new_intezmeny_name"><button onclick="newIntezmeny()">Új intézmény létrehozása</button><br>
+  <span id="new_intezmeny_name_err" class="err"></span>
+  <span id="intezmeny_list"></span>
 
   <script src="js/profile.js" type="module"></script>
 </body>

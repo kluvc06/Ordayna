@@ -17,16 +17,34 @@ await getAccessToken();
 
 
 async function loadUserData() {
-  const response = await fetch(url + "user/profile", { method: "GET" });
-  if (response.ok !== true) {
-    return;
-  }
-  const result = await response.json();
+  {
+    const response = await fetch(url + "user/profile", { method: "GET" });
+    if (response.ok !== true) {
+      return;
+    }
+    const result = await response.json();
 
-  document.getElementById("og_display").innerHTML = result.display_name;
-  document.getElementById("mail_add").innerHTML = result.email;
-  document.getElementById("og_tel").innerHTML = result.phone_number !== null ? result.phone_number : "Nincs telefonszám megadva";
-  document.getElementById("pfp").innerHTML = '<img src="img\\img3.jpg" alt="pfp">';
+    document.getElementById("og_display").innerHTML = result.display_name;
+    document.getElementById("mail_add").innerHTML = result.email;
+    document.getElementById("og_tel").innerHTML = result.phone_number !== null ? result.phone_number : "Nincs telefonszám megadva";
+    document.getElementById("pfp").innerHTML = '<img src="img\\img3.jpg" alt="pfp">';
+  }
+  {
+    const response = await fetch(url + "get_intezmenys", { method: "GET" });
+    if (response.ok !== true) {
+      return;
+    }
+    const result = await response.json();
+      document.getElementById("intezmeny_list").innerHTML = "";
+    for (let i = 0; i < result.length; i++) {
+      document.getElementById("intezmeny_list").innerHTML += result[i].id + ": " + "<a onclick='loadIntezmeny(" + result[i].id + ")'>" + result[i].name + "</a>" + "<br>";
+    }
+  }
+}
+
+async function loadIntezmeny(id) {
+  document.cookie = "intezmeny_id=" + id + "";
+  location.href = "home.html";
 }
 
 function hide_show() {
@@ -118,8 +136,8 @@ async function phoneChange() {
 }
 
 async function passChange() {
-  let cur_pass = validateString("inp_cur_pass_change", "inp_cur_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "Jelszó");
-  let new_pass = validateString("inp_new_pass_change", "inp_new_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "Jelszó");
+  let cur_pass = validateString("inp_cur_pass_change", "inp_cur_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "jelszó");
+  let new_pass = validateString("inp_new_pass_change", "inp_new_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "jelszó");
   if (cur_pass === false || new_pass === false) return;
 
   const response = await fetch(url + "user/change/password", {
@@ -136,6 +154,23 @@ async function passChange() {
   }
 }
 
+async function newIntezmeny() {
+  let intezmeny_name = validateString("new_intezmeny_name", "new_intezmeny_name_err", 200, 1, "intézmény név");
+  if (intezmeny_name === false) return;
+
+  const response = await fetch(url + "create_intezmeny", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_name: intezmeny_name,
+    })
+  });
+  if (response.ok === false) {
+    document.getElementById("new_intezmeny_name_err").innerHTML = "Sikertelen intézmény létrehozás<br>";
+  } else {
+    await loadUserData();
+  }
+}
+
 window.hide_show = hide_show;
 window.changePfp = changePfp;
 window.signout = signout;
@@ -145,3 +180,5 @@ window.preparePhoneChange = preparePhoneChange;
 window.phoneChange = phoneChange;
 window.preparePassChange = preparePassChange;
 window.passChange = passChange;
+window.newIntezmeny = newIntezmeny;
+window.loadIntezmeny = loadIntezmeny;
