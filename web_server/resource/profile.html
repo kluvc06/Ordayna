@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ordayna</title>
 
-
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
@@ -26,10 +25,10 @@
 
   <div class="container">
 
-    <div class="col-6">
+    <div>
       <div class="box-medium">
         <div class="row rowcols-2 g-0">
-          <div class="col-4">
+          <div class="col-3" id="pfp-box">
             <div class="col">
               <div class="box-smallest-nb" id="pfp"></div>
             </div>
@@ -45,19 +44,22 @@
               </div>
             </div>
           </div>
-          <div class="col-8">
+          <div class="col-9">
             <div class="col">
               <div class="box-small">
                 <b>Felhasználónév:</b><br>
                 &nbsp;&nbsp;&nbsp;&nbsp; <span id="og_display"></span><br>
-                <button class="change">[Megváltoztatás]</button><br>
+                <button class="change" onclick="prepareNameChange()">[Megváltoztatás]</button><br>
+                <span id="name_change"></span>
                 <b>Email:</b><br>
                 &nbsp;&nbsp;&nbsp;&nbsp; <span id="mail_add"></span><br>
-                <b>Jelszó: </b><br>
-                <button class="change">[Megváltoztatás]</button><br>
                 <b>Telefonszám:</b> <br>
                 &nbsp;&nbsp;&nbsp;&nbsp; <span id="og_tel"></span><br>
-                <button class="change">[Megváltoztatás]</button><br>
+                <button class="change" onclick="preparePhoneChange()">[Megváltoztatás]</button><br>
+                <span id="phone_change"></span>
+                <b>Jelszó:</b><br>
+                <button class="change" onclick="preparePassChange()">[Megváltoztatás]</button><br>
+                <span id="pass_change"></span>
 
               </div>
             </div>
@@ -70,7 +72,7 @@
   </div>
   <br><button onclick="location.href='index.php'" id="home_button">home</button>
 
-  <script src="js/profile.js"></script>
+  <script src="js/profile.js" type="module"></script>
 </body>
 
 </html>

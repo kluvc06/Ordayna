@@ -1,9 +1,11 @@
+import { validateEmail, validateString, validateTelefon } from "./validate.js";
+
 let url = window.location.protocol + "//" + window.location.host + "/";
 
 async function refresh() {
   const response = await fetch(url + "token/refresh_refresh_token", { method: "GET" });
   if (response.ok === true) {
-      location.href = 'profile.html';
+    location.href = 'profile.html';
   }
 }
 
@@ -11,56 +13,13 @@ refresh();
 
 
 async function signup() {
-  let disp_name = document.getElementById("signup_display_name").value;
-  let email = document.getElementById("signup_email").value;
-  let tel = document.getElementById("signup_tel").value;
-  let pass_1 = document.getElementById("signup_pass_1").value;
-  let pass_2 = document.getElementById("signup_pass_2").value;
+  let disp_name = validateString("signup_display_name", "signup_display_name_err", 200, 0, "felhasználónév");
+  let email = validateEmail("signup_email", "signup_email_err", 254, 0, "email");
+  let tel = validateTelefon("signup_tel", "signup_tel_err", 15, 0, "telefonszám");
+  let pass_1 = validateString("signup_pass_1", "signup_pass_1_err", Number.MAX_SAFE_INTEGER, 12, "jelszó");
+  let pass_2 = validateString("signup_pass_2", "signup_pass_2_err", Number.MAX_SAFE_INTEGER, 12, "jelszó");
 
-  let errored = false;
-  if (disp_name.length === 0) {
-    document.getElementById("signup_display_name_err").innerHTML = "Úres felhasználónév nem megengedett<br>";
-    errored = true;
-  } else if (disp_name.length > 200) {
-    document.getElementById("signup_display_name_err").innerHTML = "A felhasználónév maximum hossza 200<br>";
-    errored = true;
-  } else {
-    document.getElementById("signup_display_name_err").innerHTML = "";
-  }
-  if (email.length === 0) {
-    document.getElementById("signup_email_err").innerHTML = "Úres email nem megengedett<br>";
-    errored = true;
-  } else if (email.length > 254) {
-    document.getElementById("signup_email_err").innerHTML = "Az email maximum hossza 254<br>";
-    errored = true;
-  } else if (email.match(/^[^@]+[@]+[^@]+$/) === null) {
-    document.getElementById("signup_email_err").innerHTML = "Nem valid email<br>";
-    errored = true;
-  } else {
-    document.getElementById("signup_email_err").innerHTML = "";
-  }
-  if (tel.length > 15) {
-    document.getElementById("signup_tel_err").innerHTML = "A telefonszám maximum hossza 15<br>";
-    errored = true;
-  } else if (tel.match(/^\d+$/) === null && tel.length !== 0) {
-    document.getElementById("signup_tel_err").innerHTML = "A telefonszámnak numerikusnak kell lennie<br>";
-    errored = true;
-  } else {
-    document.getElementById("signup_tel_err").innerHTML = "";
-  }
-  if (pass_1.length < 12) {
-    document.getElementById("signup_pass_1_err").innerHTML = "A jelszó minimum hossza 12<br>";
-    errored = true;
-  } else {
-    document.getElementById("signup_pass_1_err").innerHTML = "";
-  }
-  if (pass_2.length < 12) {
-    document.getElementById("signup_pass_2_err").innerHTML = "A jelszó minimum hossza 12<br>";
-    errored = true;
-  } else {
-    document.getElementById("signup_pass_2_err").innerHTML = "";
-  }
-  if (errored === true) return;
+  if (disp_name === false || email === false || tel === false || pass_1 === false || pass_2 === false) return;
 
   if (pass_1 !== pass_2) {
     document.getElementById("signup_pass_2_err").innerHTML = "A jelszavaknak egyeznie kell<br>";
@@ -94,29 +53,10 @@ async function signup() {
 }
 
 async function login() {
-  let email = document.getElementById("login_email").value;
-  let pass = document.getElementById("login_pass").value;
+  let email = validateEmail("login_email", "login_email_err", 254, 0, "email");
+  let pass = validateString("login_pass", "login_pass_err", Number.MAX_SAFE_INTEGER, 12, "jelszó");
 
-  let errored = false;
-  if (email.length === 0) {
-    document.getElementById("login_email_err").innerHTML = "Úres email nem megengedett<br>";
-    errored = true;
-  } else if (email.length > 254) {
-    document.getElementById("login_email_err").innerHTML = "Az email maximum hossza 254<br>";
-    errored = true;
-  } else if (email.match(/^[^@]+[@]+[^@]+$/) === null) {
-    document.getElementById("login_email_err").innerHTML = "Nem valid email<br>";
-    errored = true;
-  } else {
-    document.getElementById("login_email_err").innerHTML = "";
-  }
-  if (pass.length < 12) {
-    document.getElementById("login_pass_err").innerHTML = "A jelszó minimum hossza 12<br>";
-    errored = true;
-  } else {
-    document.getElementById("login_pass_err").innerHTML = "";
-  }
-  if (errored === true) return;
+  if (email === false || pass === false) return;
 
   const response = await fetch(url + "token/get_refresh_token", {
     method: "POST",
@@ -127,8 +67,14 @@ async function login() {
   });
   if (response.status === 403) {
     document.getElementById("login_email_err").innerHTML = "Username or password is incorrect<br>";
+  } else if (response.ok === false) {
+    result = await response.text();
+    document.getElementById("login_email_err").innerHTML = "Unexpected error:" + result + "<br>";
   } else {
     document.getElementById("login_email_err").innerHTML = "";
     location.href = 'profile.html';
   }
 }
+
+window.login = login;
+window.signup = signup;

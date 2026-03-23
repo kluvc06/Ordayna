@@ -131,7 +131,7 @@ class User
         }
     }
 
-    public static function changePhoneNumber(DB $db, int $id, string $new_phone_number): true|null
+    public static function changePhoneNumber(DB $db, int $id, string|null $new_phone_number): true|null
     {
         try {
             if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;

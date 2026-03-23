@@ -1,3 +1,5 @@
+import { validateString, validateTelefon } from "./validate.js";
+
 let url = window.location.protocol + "//" + window.location.host + "/";
 
 async function getAccessToken() {
@@ -5,52 +7,45 @@ async function getAccessToken() {
   if (response.ok !== true) {
     location.href = 'login.html';
   }
+  await response.text();
 }
 
 // Called every minute
-let intervalId = setInterval(getAccessToken, 1000 * 60);
+setInterval(getAccessToken, 1000 * 60);
 
-getAccessToken();
-
-const user = {
-  "display_name": "admin1",
-  "email": "forTest@email.com",
-  "tel": "06 20 666 1939",
-  "img": '<img src="img\\img3.jpg" alt="pfp" >'
-}
+await getAccessToken();
 
 
-const display = document.getElementById("og_display");
-const email = document.getElementById("mail_add");
-const tel = document.getElementById("og_tel");
-const img = document.getElementById("pfp");
-const hide = document.getElementById("hide");
+async function loadUserData() {
+  const response = await fetch(url + "user/profile", { method: "GET" });
+  if (response.ok !== true) {
+    return;
+  }
+  const result = await response.json();
 
-
-function loadUserData() {
-  display.innerHTML = user.display_name;
-  email.innerHTML = user.email;
-  tel.innerHTML = user.tel;
-  img.innerHTML = user.img;
+  document.getElementById("og_display").innerHTML = result.display_name;
+  document.getElementById("mail_add").innerHTML = result.email;
+  document.getElementById("og_tel").innerHTML = result.phone_number !== null ? result.phone_number : "Nincs telefonszám megadva";
+  document.getElementById("pfp").innerHTML = '<img src="img\\img3.jpg" alt="pfp">';
 }
 
 function hide_show() {
-  hide.style = "display:block"
+  document.getElementById("hide").style.display = document.getElementById("hide").style.display === "block" ? "none" : "block";
 }
 
 function changePfp(a) {
   switch (a) {
     case 1:
-      img.innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
+      document.getElementById("pfp").innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
       break;
     case 2:
-      img.innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
+      document.getElementById("pfp").innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
       break;
     case 3:
-      img.innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
+      document.getElementById("pfp").innerHTML = '<img src="img\\img' + a + '.jpg" alt="pfp" >'
       break;
     default:
-      hide.style = "display:none"
+      document.getElementById("hide").style = "display:none"
       break;
   }
 }
@@ -62,5 +57,91 @@ async function signout() {
   }
 }
 
-loadUserData();
+await loadUserData();
 
+function prepareNameChange() {
+  document.getElementById("name_change").innerHTML = `
+    <input type='text' id='inp_name_change'><button onclick='nameChange()'>Megváltoztatás</button><br>
+    <span id='inp_name_change_err' class='err'></span><br>
+  `;
+}
+
+function preparePhoneChange() {
+  document.getElementById("phone_change").innerHTML = `
+    <input type='text' id='inp_phone_change'><button onclick='phoneChange()'>Megváltoztatás</button><br>
+    <span id='inp_phone_change_err' class='err'></span><br>
+  `;
+}
+
+function preparePassChange() {
+  document.getElementById("pass_change").innerHTML = `
+    <input type='text' id='inp_cur_pass_change'><input type='text' id='inp_new_pass_change'><button onclick='passChange()'>Megváltoztatás</button><br>
+    <span id='inp_cur_pass_change_err' class='err'></span><br>
+    <span id='inp_new_pass_change_err' class='err'></span><br>
+  `;
+}
+
+async function nameChange() {
+  let name = validateString("inp_name_change", "inp_name_change_err", 200, 0, "felhasználónév");
+  if (name === false) return;
+
+  const response = await fetch(url + "user/change/display_name", {
+    method: "POST",
+    body: JSON.stringify({
+      new_disp_name: name,
+    })
+  });
+  if (response.ok === false) {
+    document.getElementById("inp_name_change_err").innerHTML = "Sikertelen felhasználónév változtatás<br>";
+  } else {
+    document.getElementById("name_change").innerHTML = "";
+    await loadUserData();
+  }
+}
+
+async function phoneChange() {
+  let phone = validateTelefon("inp_phone_change", "inp_phone_change_err");
+  if (phone === false) return;
+
+  const response = await fetch(url + "user/change/phone_number", {
+    method: "POST",
+    body: phone.length === 0 ? "" : JSON.stringify({
+      new_phone_number: phone,
+    })
+  });
+  if (response.ok === false) {
+    document.getElementById("inp_phone_change_err").innerHTML = "Sikertelen telefonszám változtatás<br>";
+  } else {
+    document.getElementById("phone_change").innerHTML = "";
+    await loadUserData();
+  }
+}
+
+async function passChange() {
+  let cur_pass = validateString("inp_cur_pass_change", "inp_cur_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "Jelszó");
+  let new_pass = validateString("inp_new_pass_change", "inp_new_pass_change_err", Number.MAX_SAFE_INTEGER, 12, "Jelszó");
+  if (cur_pass === false || new_pass === false) return;
+
+  const response = await fetch(url + "user/change/password", {
+    method: "POST",
+    body: JSON.stringify({
+      pass: cur_pass,
+      new_pass: new_pass,
+    })
+  });
+  if (response.ok === false) {
+    document.getElementById("inp_cur_pass_change_err").innerHTML = "Sikertelen jelszó változtatás<br>";
+  } else {
+    location.href = 'login.html';
+  }
+}
+
+window.hide_show = hide_show;
+window.changePfp = changePfp;
+window.signout = signout;
+window.prepareNameChange = prepareNameChange;
+window.nameChange = nameChange;
+window.preparePhoneChange = preparePhoneChange;
+window.phoneChange = phoneChange;
+window.preparePassChange = preparePassChange;
+window.passChange = passChange;

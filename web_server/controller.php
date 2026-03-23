@@ -303,8 +303,9 @@ class Controller
     public static function changePhoneNumber(): null
     {
         $data = json_decode(file_get_contents("php://input"));
-        $new_phone_number = Controller::validatePhoneNumber(@$data->new_phone_number, false);
+        $new_phone_number = Controller::validatePhoneNumber(@$data->new_phone_number, true);
         if ($new_phone_number === null) return handleReturn(ControllerRet::bad_request);
+        if ($new_phone_number === false) $new_phone_number = null;
 
         $db = DB::init();
         if ($db === null) return handleReturn(ControllerRet::unexpected_error);
@@ -314,7 +315,7 @@ class Controller
         $token = Controller::validateAccessToken($db, $jwt);
         if (is_a($token, "Controller\ControllerRet") === true) return handleReturn($token);
 
-        if (User::changePhoneNumber($db, $token->claims()->get("uid"), $data->new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (User::changePhoneNumber($db, $token->claims()->get("uid"), $new_phone_number) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_no_content);
     }

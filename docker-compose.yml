@@ -2,7 +2,7 @@ services:
   database:
     image: mariadb
     # ports:
-    #   - "8001:3306"
+      # - "3306:3306"
     restart: always
     environment:
       # MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true

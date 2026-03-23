@@ -6,7 +6,11 @@ sudo apt-get --update install docker\* -y
 cd ../web_server
 sudo docker build . -t ordayna-backend
 rm -f config.php
-printf "<?php\n\ndeclare(strict_types=1);\n\nclass Config {\n" | tee -a config.php > /dev/null
+printf "<?php\n\n" | tee -a config.php > /dev/null
+printf "declare(strict_types=1);\n\n" | tee -a config.php > /dev/null
+printf "namespace Config;\n\n" | tee -a config.php > /dev/null
+printf "class Config\n" | tee -a config.php > /dev/null
+printf "{\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_address = \"database:3306\";\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_username = \"ordayna_main\";\n" | tee -a config.php > /dev/null
 printf "    public static ?string \$database_password = \"very secret\";\n" | tee -a config.php > /dev/null

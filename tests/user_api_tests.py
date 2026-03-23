@@ -108,7 +108,7 @@ def testNumber(base_message: str, method: str, endpoint_path: str, base_payload:
     testEndpoint(f"{base_message}, {number_name} is out of int's representable range", method, endpoint_path, jar, base_payload, 400, "Bad request")
 
 def testPhoneNumber(base_message: str, method: str, endpoint_path: str, base_payload: dict, jar: dict, phone_name: str, null_allowed: bool, success_code: int):
-    testNumber(base_message, method,endpoint_path, base_payload, jar, phone_name, null_allowed, success_code)
+    testNumber(base_message, method, endpoint_path, base_payload, jar, phone_name, null_allowed, success_code)
     base_payload[phone_name] = "1234567890123456"
     testEndpoint(f"{base_message}, {phone_name} length longer than 15", method, endpoint_path, jar, base_payload, 400, "Bad request")
 
@@ -236,7 +236,7 @@ def changeUserData():
     testEndpoint("Change display name, method is not POST", "PATCH", "/user/change/display_name", access_jar, {"new_disp_name": "testerer"}, 405, "")
 
     testEndpoint("Change phone number", "POST", "/user/change/phone_number", access_jar, {"new_phone_number": "12345"}, 204, "")
-    testPhoneNumber("Change phone number", "POST", "/user/change/phone_number", {}, access_jar, "new_phone_name", False, 204)
+    testPhoneNumber("Change phone number", "POST", "/user/change/phone_number", {}, access_jar, "new_phone_number", True, 204)
     testToken("Change phone number", "POST", "/user/change/phone_number", {"new_phone_number": "12345"}, wrong_access_jar)
     testEndpoint("Change phone number, method is not POST", "PATCH", "/user/change/phone_number", access_jar, {"new_phone_number": "12345"}, 405, "")
 

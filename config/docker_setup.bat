@@ -8,6 +8,8 @@ echo ^<?php >> config.php
 echo: >> config.php
 echo declare(strict_types=1); >> config.php
 echo: >> config.php
+echo namespace Config; >> config.php
+echo: >> config.php
 echo class Config { >> config.php
 echo     public static ?string $database_address = "database:3306"; >> config.php
 echo     public static ?string $database_username = "ordayna_main"; >> config.php
