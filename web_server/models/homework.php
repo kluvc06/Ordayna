@@ -11,8 +11,6 @@ require_once "db.php";
 use Lesson\Lesson;
 use Attachment\Attachment;
 use DB\DB;
-use DateTime;
-use DateTimeZone;
 use Exception;
 
 class Homework

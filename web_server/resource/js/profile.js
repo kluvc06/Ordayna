@@ -1,20 +1,5 @@
 import { validateString, validateTelefon } from "./validate.js";
-
-let url = window.location.protocol + "//" + window.location.host + "/";
-
-async function getAccessToken() {
-  const response = await fetch(url + "token/get_access_token", { method: "GET" });
-  if (response.ok !== true) {
-    location.href = 'login.html';
-  }
-  await response.text();
-}
-
-// Called every minute
-setInterval(getAccessToken, 1000 * 60);
-
-await getAccessToken();
-
+import { url } from "./cookie.js";
 
 async function loadUserData() {
   {
@@ -35,7 +20,7 @@ async function loadUserData() {
       return;
     }
     const result = await response.json();
-      document.getElementById("intezmeny_list").innerHTML = "";
+    document.getElementById("intezmeny_list").innerHTML = "";
     for (let i = 0; i < result.length; i++) {
       document.getElementById("intezmeny_list").innerHTML += result[i].id + ": " + "<a onclick='loadIntezmeny(" + result[i].id + ")'>" + result[i].name + "</a>" + "<br>";
     }
@@ -44,7 +29,7 @@ async function loadUserData() {
 
 async function loadIntezmeny(id) {
   document.cookie = "intezmeny_id=" + id + "";
-  location.href = "home.html";
+  location.replace("home.html");
 }
 
 function hide_show() {
@@ -71,7 +56,7 @@ function changePfp(a) {
 async function signout() {
   const response = await fetch(url + "user/logout", { method: "GET" });
   if (response.ok === true) {
-    location.href = 'login.html';
+    location.replace('login.html');
   }
 }
 
@@ -150,7 +135,7 @@ async function passChange() {
   if (response.ok === false) {
     document.getElementById("inp_cur_pass_change_err").innerHTML = "Sikertelen jelszó változtatás<br>";
   } else {
-    location.href = 'login.html';
+    location.replace('login.html');
   }
 }
 

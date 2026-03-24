@@ -91,7 +91,7 @@ h1{
     padding: 20px;
 }
 
-#classes{
+#groups{
     margin: 10px;
     position: fixed;
     top: 35px;
@@ -113,9 +113,11 @@ h1{
     border-radius: 50%;
 }
 
-#bitch_move{
-    margin-right:0px auto;
-    text-align: right;
+#bitch_table {
+    width: 100%;
+    #bitch_move{
+        text-align: right;
+    }
 }
 
 

@@ -1,42 +1,83 @@
-const teac = ["Kovács Anna", "Nagy Bence", "Szabó Csilla", "Tóth Dávid", "Varga Eszter", "Kiss Feri", "Horváth Gábor", "Balogh Hanna", "Papp István", "Takács Jázmin", "Molnár Katalin", "Németh László", "Farkas Márk", "Orbán Nóra", "Lukács Oliver", "Bodó Petra", "Pintér Rita", "Gulyás Sándor", "Hegedűs Tamás", "Veres Vivien", "Szalai Zsolt", "Fodor Balázs", "Barta Dóra", "Csonka Erik", "Vincze Fanni", "Borbély Gergő", "Hajdu Helga", "Somogyi József", "Bíró Krisztián", "Juhász Laura"];
-const room = ["101", "102", "103", "104", "105", "201", "202", "203", "204", "205", "301", "302", "303", "304", "305", "A1", "A2", "B1", "B2", "Lab1"];
-const subj = ["matematika", "kémia", "biológia", "magyar nyelv", "irodalom", "történelem", "földrajz", "angol", "német", "informatika", "testnevelés", "ének-zene", "rajz", "technika", "etika", "digitális kultúra", "gazdaságtan", "programozás", "fizika"];
-const clas = ["Class A", "Class B", "Class C", "Class D", "Class E", "Class F", "Class G", "Class H", "Class I", "Class J", "Class K", "Class L", "Class M", "Class N", "Class O", "Class P", "Class Q", "Class R", "Class S", "Class T", "Class U", "Class V", "Class W", "Class X", "Class Y", "Class Z"];
+import { } from "./validate.js";
+import { url, getCookie } from "./cookie.js";
 
+let intezmeny_id = getCookie("intezmeny_id");
+if (intezmeny_id === null) location.replace("profile.html");
+let teachers = null;
+let lessons = null;
+let rooms = null;
+let groups = null;
 
-const teac_tag = document.getElementById("tanar_option");
-const subj_tag = document.getElementById("tantargy_option");
-const room_tag = document.getElementById("terem_option");
-const clas_tag = document.getElementById("classes");
+async function loadTeachers() {
+  const response = await fetch(url + "intezmeny/get/teachers", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  teachers = await response.json();
 
-const day = document.getElementById("days");
-const id = document.getElementById("get_id")
+  document.getElementById("tanar_option").innerHTML = "";
+  for (let i = 0; i < teachers.length; i++) {
+    document.getElementById("tanar_option").innerHTML += `<option value="${teachers[i].name}">${teachers[i].name}</option>`;
+  }
+}
 
-const orarend = document.getElementById("orarend_box");
+async function loadLessons() {
+  const response = await fetch(url + "intezmeny/get/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  lessons = await response.json();
 
-const targy = document.getElementById('targy');
-targy.value = "";
-const tanar = document.getElementById('tanar');
-tanar.value = "";
-const terem = document.getElementById('terem');
-terem.value = "";
+  document.getElementById("tantargy_option").innerHTML = "";
+  for (let i = 0; i < lessons.length; i++) {
+    document.getElementById("tantargy_option").innerHTML += `<option value="${lessons[i].name}">${lessons[i].name}</option>`;
+  }
+}
 
+async function loadRooms() {
+  const response = await fetch(url + "intezmeny/get/rooms", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  rooms = await response.json();
 
+  document.getElementById("terem_option").innerHTML = "";
+  for (let i = 0; i < rooms.length; i++) {
+    document.getElementById("terem_option").innerHTML += `<option value="${rooms[i].name}">${rooms[i].name}</option>`;
+  }
+}
 
-const err = document.getElementById("err");
+async function loadGroups() {
+  const response = await fetch(url + "intezmeny/get/groups", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  groups = await response.json();
 
-err.innerHTML = "";
-
-function generateContentForCreate() {
-    console.log("loads")
-    teac_tag.innerHTML = teac.map(t => `<option value="${t}" >${t}</option>`).join("");
-    subj_tag.innerHTML = subj.map(t => `<option value="${t}" >${t}</option>`).join("");
-    room_tag.innerHTML = room.map(t => `<option value="${t}" >${t}</option>`).join("");
-
-    clas_tag.innerHTML = clas.map(t => `<option value="${t}">${t}</option>`).join("");
-
-
-    console.log("works")
+  document.getElementById("groups").innerHTML = "";
+  for (let i = 0; i < groups.length; i++) {
+    document.getElementById("groups").innerHTML += `<option value="${groups[i].name}">${groups[i].name}</option>`;
+  }
 }
 
 let db = 1;
@@ -45,80 +86,85 @@ let dataArray = [];
 
 function lockData() {
 
-    if (terem.value && tanar.value && targy.value) {
-        if(db<10){
-            db=`0${db}`
-        }
-
-        const entry = {
-            id: `ora_${db}`,
-            text: `${db}. ${terem.value} | ${tanar.value} | ${targy.value} | ${day.value}`
-        };
-
-        dataArray.push(entry);
-
-        orarend.innerHTML = dataArray
-            .map(item => `<option value="${item.id}">${item.text}</option>`)
-            .join("");
-        id_arr.push(db)
-        db++;
-        err.innerHTML = "";
-
-        terem.value = "";
-        tanar.value = "";
-        targy.value = "";
-        addId()
-    } else {
-        err.innerHTML = "Hiányos adatok";
+  if (document.getElementById('terem').value && document.getElementById('tanar').value && document.getElementById('targy').value) {
+    if (db < 10) {
+      db = `0${db}`
     }
+
+    const entry = {
+      id: `ora_${db}`,
+      text: `${db}. ${document.getElementById('terem').value} | ${document.getElementById('tanar').value} | ${document.getElementById('targy').value} | ${document.getElementById("days").value}`
+    };
+
+    dataArray.push(entry);
+
+    document.getElementById("orarend_box").innerHTML = dataArray
+      .map(item => `<option value="${item.id}">${item.text}</option>`)
+      .join("");
+    id_arr.push(db)
+    db++;
+    document.getElementById("err").innerHTML = "";
+
+    document.getElementById('terem').value = "";
+    document.getElementById('tanar').value = "";
+    document.getElementById('targy').value = "";
+    addId()
+  } else {
+    document.getElementById("err").innerHTML = "Hiányos adatok";
+  }
 }
 
 
 function addItem(e, z) {
-    document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
-    e.selectedIndex=-1;
+  document.getElementById(z).value = e.options[e.selectedIndex].getAttribute("value");
+  e.selectedIndex = -1;
 }
 
 function addId() {
-    id.innerHTML = id_arr.map(t => `<option value="${t}" >${t}</option>`).join("");
-    id.style="display:block"
-
+  document.getElementById("get_id").innerHTML = id_arr.map(t => `<option value="${t}" >${t}</option>`).join("");
+  document.getElementById("get_id").style = "display:block";
 }
 
 function deleteData() {
-    let del_id = id.value; 
+  let del_id = document.getElementById("get_id").value;
 
-    if (del_id) {
-        dataArray = dataArray.filter(item => item.id !== `ora_${del_id}`);
-        id_arr = id_arr.filter(t => t != del_id);
+  if (del_id) {
+    dataArray = dataArray.filter(item => item.id !== `ora_${del_id}`);
+    id_arr = id_arr.filter(t => t != del_id);
 
-        orarend.innerHTML = dataArray
-            .map(item => `<option value="${item.id}">${item.text}</option>`)
-            .join("");
-        
-        addId(); 
-    } else {
-        err.innerHTML = "Nincs kiválasztott ID elem!";
-        err.style.color = "red";
-    }
-    if(id_arr.length===0){
-        id.style="display:none"
-    }
+    document.getElementById("orarend_box").innerHTML = dataArray
+      .map(item => `<option value="${item.id}">${item.text}</option>`)
+      .join("");
+
+    addId();
+  } else {
+    document.getElementById("err").innerHTML = "Nincs kiválasztott ID elem!";
+    document.getElementById("err").style.color = "red";
+  }
+  if (id_arr.length === 0) {
+    document.getElementById("get_id").style = "display:none"
+  }
 }
 
 function allClear() {
-    db = 1;
-    id_arr = [];
-    dataArray = [];
-    orarend.innerHTML = "";
-    terem.value = "";
-    targy.value = "";
-    tanar.value = "";
-    err.innerHTML = "";
-    id.style="display:none"
-
-}
-function done(){
-    //loads to database
+  db = 1;
+  id_arr = [];
+  dataArray = [];
+  document.getElementById("orarend_box").innerHTML = "";
+  document.getElementById('terem').value = "";
+  document.getElementById('targy').value = "";
+  document.getElementById('tanar').value = "";
+  document.getElementById("err").innerHTML = "";
+  document.getElementById("get_id").style = "display:none"
 }
 
+// This is intentionally not awaited since nothing else depends on this
+loadTeachers();
+loadLessons();
+loadRooms();
+await loadGroups();
+
+window.lockData = lockData;
+window.addItem = addItem;
+window.deleteData = deleteData;
+window.allClear = allClear;

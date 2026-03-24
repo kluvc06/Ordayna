@@ -1,56 +1,47 @@
-const feladatok = [
-  {
-    "tantárgy": "Matematika",
-    "feladat": "Házi feladat: Másodfokú egyenletek",
-    "feladat_leiras": "Oldd meg a megadott 10 darab másodfokú egyenletet. Minden lépést írj le részletesen, és külön jelöld a megoldóképlet használatát. A megoldásokat ellenőrizd behelyettesítéssel is.",
-    "leadas_modja": "Iskola Google Classroom felületén PDF-ben",
-    "varhato_dolgozatok": [
-      "Zárthelyi dolgozat a másodfokú egyenletekből",
-      "Röpdolgozat alapfogalmakból"
-    ]
-  },
-  {
-    "tantárgy": "Történelem",
-    "feladat": "Esszé a reformációról",
-    "feladat_leiras": "Írj 1–1,5 oldalas esszét a reformáció kialakulásáról, főbb alakjairól és következményeiről. Térj ki arra is, hogy milyen társadalmi és politikai változásokat indított el Európában.",
-    "leadas_modja": "Kinyomtatva leadni az órán",
-    "varhato_dolgozatok": []
-  },
-  {
-    "tantárgy": "Biológia",
-    "feladat": "Projektmunka: Ökoszisztémák vizsgálata",
-    "feladat_leiras": "Készíts csoportmunkában egy részletes prezentációt egy általad választott ökoszisztéma felépítéséről, az élőlények kapcsolatairól és az ott zajló anyag- és energiaáramlásról. Legalább 8 diából álljon, saját képeket is használhattok.",
-    "leadas_modja": "Prezentáció bemutatása órán",
-    "varhato_dolgozatok": [
-      "Nagydolgozat: sejttan és ökológiai alapok"
-    ]
-  },
-  {
-    "tantárgy": "Informatika",
-    "feladat": "Kódolási feladat: egyszerű weboldal",
-    "feladat_leiras": "Hozz létre egy statikus weboldalt HTML és CSS használatával. A weboldal tartalmazzon fejlécet, láblécet, egy képgalériát és egy rövid bemutatkozó szöveget. Ügyelj a reszponzív elrendezésre is.",
-    "leadas_modja": "GitHub link feltöltése az iskolai rendszeren",
-    "varhato_dolgozatok": []
-  },
-  {
-    "tantárgy": "Fizika",
-    "feladat": "Kísérlet kiértékelése",
-    "feladat_leiras": "A múlt órán elvégzett gyorsulásmérés kísérlet adatait elemezd ki. Számíts átlagokat, készíts grafikonokat és fogalmazd meg, hogyan igazolják a mért adatok a mozgások törvényeit.",
-    "leadas_modja": "Word vagy PDF fájl feltöltése",
-    "varhato_dolgozatok": [
-      "Zárthelyi dolgozat: newtoni törvények"
-    ]
+import {url, getCookie} from "./cookie.js";
+
+const intezmeny_id = getCookie("intezmeny_id");
+if (intezmeny_id === null) location.replace("profile.html");
+
+async function loadClasses() {
+  const response = await fetch(url + "intezmeny/get/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
   }
-];
+  const tantargyak = await response.json();
 
-const t = document.getElementById("tantargy");
-
-function loadClass() {
-  // tantárgyak kigyűjtése + duplikációk kiszűrése
-  const tantargyak = [...new Set(feladatok.map(f => f.tantárgy))];
-
-  // select feltöltése
-  t.innerHTML = tantargyak
-    .map(tan => `<option value="${tan}">${tan}</option>`)
-    .join("");
+  document.getElementById("tantargy").innerHTML = "";
+    document.getElementById("tantargy").innerHTML += `<option value="">Összes</option>`;
+  for (let i = 0; i < tantargyak.length; i++) {
+    document.getElementById("tantargy").innerHTML += `<option value="${tantargyak[i].name}">${tantargyak[i].name}</option>`;
+  }
 }
+
+async function loadHomeworks() {
+  const response = await fetch(url + "intezmeny/get/homeworks", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: intezmeny_id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  const homeworks = await response.json();
+
+  document.getElementById("feladatok").innerHTML = "";
+  for (let i = 0; i < homeworks.length; i++) {
+    // Not sure how this is supposed to look like so I just left it like this
+    document.getElementById("feladatok").innerHTML += ``;
+    document.getElementById("feladatok_leiras").innerHTML += ``;
+  }
+}
+
+// This is intentionally not awaited since nothing else depends on this
+loadClasses();
+await loadHomeworks();
