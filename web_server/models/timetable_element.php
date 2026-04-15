@@ -12,6 +12,7 @@ use Exception;
 class TimetableElement
 {
     public int $id;
+    public string $start;
     public string $duration;
     public int $day;
     public string $from;
@@ -23,6 +24,7 @@ class TimetableElement
 
     public function __construct(
         int $id,
+        string $start,
         string $duration,
         int $day,
         string $from,
@@ -33,6 +35,7 @@ class TimetableElement
         ?int $room_id
     ) {
         $this->id = $id;
+        $this->start = $start;
         $this->duration = $duration;
         $this->day = $day;
         $this->from = $from;
@@ -59,6 +62,7 @@ class TimetableElement
     public static function createTimetableElement(
         DB $db,
         int $intezmeny_id,
+        string $start,
         string $duration,
         int $day,
         string $from,
@@ -71,8 +75,8 @@ class TimetableElement
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
             return $db->handleQueryResult($db->connection->execute_query(
-                'CALL newTimetableElement(?, ?, ?, ?, ?, ?, ?, ?)',
-                array($duration, $day, $from, $until, $group_id, $lesson_id, $teacher_id, $room_id)
+                'CALL newTimetableElement(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                array($start, $duration, $day, $from, $until, $group_id, $lesson_id, $teacher_id, $room_id)
             ));
         } catch (Exception) {
             return $db->logError(false);
@@ -96,6 +100,7 @@ class TimetableElement
         DB $db,
         int $intezmeny_id,
         int $element_id,
+        string $start,
         string $duration,
         int $day,
         string $from,
@@ -108,8 +113,8 @@ class TimetableElement
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
             return $db->handleQueryResult($db->connection->execute_query(
-                'CALL modTimetableElement(?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                array($element_id, $duration, $day, $from, $until, $group_id, $lesson_id, $teacher_id, $room_id)
+                'CALL modTimetableElement(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                array($element_id, $start, $duration, $day, $from, $until, $group_id, $lesson_id, $teacher_id, $room_id)
             ));
         } catch (Exception) {
             return $db->logError(false);
@@ -127,13 +132,14 @@ class TimetableElement
                 array_push($arr, new TimetableElement(
                     (int) $ret[$i][0],
                     $ret[$i][1],
-                    (int) $ret[$i][2],
-                    $ret[$i][3],
+                    $ret[$i][2],
+                    (int) $ret[$i][3],
                     $ret[$i][4],
-                    $ret[$i][5] === null ? null : (int) $ret[$i][5],
+                    $ret[$i][5],
                     $ret[$i][6] === null ? null : (int) $ret[$i][6],
                     $ret[$i][7] === null ? null : (int) $ret[$i][7],
                     $ret[$i][8] === null ? null : (int) $ret[$i][8],
+                    $ret[$i][9] === null ? null : (int) $ret[$i][9],
                 ));
             }
             return $arr;

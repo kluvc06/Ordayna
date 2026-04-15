@@ -698,6 +698,8 @@ class Controller
     public static function createTimetableElement(): null
     {
         $data = json_decode(file_get_contents("php://input"));
+        $start = Controller::validateTime(@$data->start, time_allowed: true);
+        if ($start === null) return handleReturn(ControllerRet::bad_request);
         $duration = Controller::validateTime(@$data->duration, time_allowed: true);
         if ($duration === null) return handleReturn(ControllerRet::bad_request);
         $day = Controller::validateInteger(@$data->day);
@@ -751,6 +753,7 @@ class Controller
         if (TimetableElement::createTimetableElement(
             $db,
             $intezmeny_id,
+            $start->format("H:i:s"),
             $duration->format("H:i:s"),
             $day,
             $from->format("Y-m-d"),
@@ -1162,6 +1165,8 @@ class Controller
         $data = json_decode(file_get_contents("php://input"));
         $element_id = Controller::validateInteger(@$data->element_id);
         if ($element_id === null) return handleReturn(ControllerRet::bad_request);
+        $start = Controller::validateTime(@$data->start, time_allowed: true);
+        if ($start === null) return handleReturn(ControllerRet::bad_request);
         $duration = Controller::validateTime(@$data->duration, time_allowed: true);
         if ($duration === null) return handleReturn(ControllerRet::bad_request);
         $day = Controller::validateInteger(@$data->day);
@@ -1219,6 +1224,7 @@ class Controller
             $db,
             $intezmeny_id,
             $element_id,
+            $start->format("H:i:s"),
             $duration->format("H:i:s"),
             $day,
             $from->format("Y-m-d"),

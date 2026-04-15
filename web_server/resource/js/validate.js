@@ -38,6 +38,51 @@ export function validateNumber(id, err_id, max, min, name) {
   }
 }
 
+export function validateDateTime(id, err_id, name) {
+  let datetime = document.getElementById(id).value;
+  // Check datetime format
+  if (/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/gm.test(datetime) === false) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem felel meg a formátumnak<br>";
+    return false;
+  }
+  // Check if datetime is valid
+  if (isNaN(new Date(datetime)) === true) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem érvényes<br>";
+    return false;
+  }
+  return datetime;
+}
+
+export function validateDate(id, err_id, name) {
+  let date = document.getElementById(id).value;
+  // Check date format
+  if (/^(\d{4})-(\d{2})-(\d{2})$/gm.test(date) === false) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem felel meg a formátumnak<br>";
+    return false;
+  }
+  // Check if date is valid
+  if (isNaN(new Date(date)) === true) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem érvényes dátum<br>";
+    return false;
+  }
+  return date;
+}
+
+export function validateTime(id, err_id, name) {
+  let datetime = document.getElementById(id).value;
+  // Check time format
+  if (/^(\d{2}):(\d{2}):(\d{2})$/gm.test(datetime) === false) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem felel meg a formátumnak<br>";
+    return false;
+  }
+  // Check if time is valid
+  if (isNaN(new Date("2000-05-05 " + datetime)) === true) {
+    document.getElementById(err_id).innerHTML = "A " + name + " nem érvényes idő<br>";
+    return false;
+  }
+  return datetime;
+}
+
 export function validateEmail(id, err_id) {
   const val = document.getElementById(id).value;
   if (val.length === 0) {

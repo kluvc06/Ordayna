@@ -432,46 +432,49 @@ def intezmenyCreateEndpoints():
 
 
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-           {"duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+           {"start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
             "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "intezmeny_id", False, 201, True)
     testDateTime("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+                  "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "start", False, 201, False, True)
+    testDateTime("Create timetable element", "POST", "/intezmeny/create/timetable_element",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "duration", False, 201, False, True)
     testNumber("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "from": "2020-12-24", "until": "2020-12-25",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "from": "2020-12-24", "until": "2020-12-25",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "day", False, 201)
     testDateTime("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "until": "2020-12-25",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "until": "2020-12-25",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "from", False, 201, True, False)
     testDateTime("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "until", False, 201, True, False)
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+           {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
             "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "group_id", True, 201, False)
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+           {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
             "group_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "lesson_id", True, 201, False)
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+           {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
             "group_id": "1", "lesson_id": "1", "room_id": "1"}, access_jar, "teacher_id", True, 201, False)
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+           {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
             "group_id": "1", "lesson_id": "1", "teacher_id": "1"}, access_jar, "room_id", True, 201, False)
     testEndpoint("Create timetable element, until is before from", "POST", "/intezmeny/create/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-23",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-23",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 400, "Bad request")
     testEndpoint("Create timetable element, until is the same day as from", "POST", "/intezmeny/create/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 201, "")
     testToken("Create timetable element", "POST", "/intezmeny/create/timetable_element",
-              {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+              {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
                "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, wrong_access_jar)
     testEndpoint("Create timetable element, method is not POST", "PATCH", "/intezmeny/create/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 405, "")
     testEndpoint("Create timetable element", "POST", "/intezmeny/create/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
+                 {"intezmeny_id": f"{intezmeny_id}", "start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 201, "")
 
     testEndpoint("Create homework", "POST", "/intezmeny/create/homework", access_jar,
@@ -618,49 +621,52 @@ def intezmenyUpdateEndpoints():
 
 
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "intezmeny_id", False, 204, True)
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"intezmeny_id": f"{intezmeny_id}", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "element_id", False, 204, False)
     testDateTime("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+                  "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "start", False, 204, False, True)
+    testDateTime("Update timetable element", "POST", "/intezmeny/update/timetable_element",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "duration", False, 204, False, True)
     testNumber("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "from": "2021-11-23", "until": "2021-11-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "from": "2021-11-23", "until": "2021-11-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "day", False, 204)
     testDateTime("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "until": "2021-11-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "until": "2021-11-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "from", False, 204, True, False)
     testDateTime("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "until", False, 204, True, False)
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "element_id": "2", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"intezmeny_id": f"{intezmeny_id}", "element_id": "2", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "group_id", True, 204, False)
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "element_id": "3", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"intezmeny_id": f"{intezmeny_id}", "element_id": "3", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "group_id": "1", "teacher_id": "1", "room_id": "1"}, access_jar, "lesson_id", True, 204, False)
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "element_id": "4", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"intezmeny_id": f"{intezmeny_id}", "element_id": "4", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "group_id": "1", "lesson_id": "1", "room_id": "1"}, access_jar, "teacher_id", True, 204, False)
     testId("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-           {"intezmeny_id": f"{intezmeny_id}", "element_id": "5", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+           {"intezmeny_id": f"{intezmeny_id}", "element_id": "5", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
             "group_id": "1", "lesson_id": "1", "teacher_id": "1"}, access_jar, "room_id", True, 204, False)
     testEndpoint("Update timetable element, until is before from", "POST", "/intezmeny/update/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-10-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-10-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 400, "Bad request")
     testEndpoint("Update timetable element, until is the same day as from", "POST", "/intezmeny/update/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-23",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-23",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 204, "")
     testToken("Update timetable element", "POST", "/intezmeny/update/timetable_element",
-              {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+              {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
                "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, wrong_access_jar)
     testEndpoint("Update timetable element, method is not POST", "PATCH", "/intezmeny/update/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 405, "")
     testEndpoint("Update timetable element", "POST", "/intezmeny/update/timetable_element", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
+                 {"intezmeny_id": f"{intezmeny_id}", "element_id": "1", "start": "03:03:03", "duration": "03:03:03", "day": "5", "from": "2021-11-23", "until": "2021-11-24",
                   "group_id": "1", "lesson_id": "1", "teacher_id": "1", "room_id": "1"}, 204, "")
 
     testId("Update homework", "POST", "/intezmeny/update/homework",
@@ -737,9 +743,8 @@ def intezmenyGetEndpoints():
     testEndpoint("Get teachers, method not POST", "PATCH", "/intezmeny/get/teachers", access_jar,
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
-    testEndpoint("Get timetable", "POST", "/intezmeny/get/timetable", access_jar,
-                 {"intezmeny_id": f"{intezmeny_id}"}, 200,
-                 '[{"id":1,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null},{"id":6,"duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1}]')
+    testEndpoint("Get timetable", "POST", "/intezmeny/get/timetable", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200,
+                 '[{"id":1,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null},{"id":6,"start":"02:02:02","duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1}]')
     testId("Get timetable", "POST", "/intezmeny/get/timetable", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get timetable", "POST", "/intezmeny/get/timetable", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get timetable, method not POST", "PATCH", "/intezmeny/get/timetable", access_jar,

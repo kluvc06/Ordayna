@@ -55,6 +55,7 @@ CREATE OR REPLACE TABLE teacher_availability (
 
 CREATE OR REPLACE TABLE timetable (
     id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    start      TIME NOT NULL,
     duration   TIME NOT NULL,
     day        TINYINT UNSIGNED NOT NULL,
     from_      DATE NOT NULL,
@@ -195,14 +196,14 @@ BEGIN
     DELETE FROM teacher_availability WHERE id=in_id;
 END;
 
-CREATE OR REPLACE PROCEDURE newTimetableElement ( IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE newTimetableElement ( IN in_start TIME, IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
 BEGIN
-    INSERT INTO timetable (duration, day, from_, until, group_id, lesson_id, teacher_id, room_id) VALUES (in_duration, in_day, in_from, in_until, in_group_id, in_lesson_id, in_teacher_id, in_room_id);
+    INSERT INTO timetable (start, duration, day, from_, until, group_id, lesson_id, teacher_id, room_id) VALUES (in_start, in_duration, in_day, in_from, in_until, in_group_id, in_lesson_id, in_teacher_id, in_room_id);
 END;
 
-CREATE OR REPLACE PROCEDURE modTimetableElement ( IN in_id INT UNSIGNED, IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE modTimetableElement ( IN in_id INT UNSIGNED, IN in_start TIME, IN in_duration TIME, IN in_day TINYINT UNSIGNED, IN in_from DATE, IN in_until DATE, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED, IN in_room_id INT UNSIGNED )
 BEGIN
-    UPDATE timetable SET duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
+    UPDATE timetable SET start=in_start, duration=in_duration, day=in_day, from_=in_from, until=in_until, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id, room_id=in_room_id WHERE in_id=id;
 END;
 
 CREATE OR REPLACE PROCEDURE delTimetableElement ( IN in_id INT UNSIGNED )
