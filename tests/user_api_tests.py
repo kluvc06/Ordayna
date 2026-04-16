@@ -4,6 +4,22 @@ import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+test_count = 0
+tests_passed = 0
+refresh_jar = dict()
+access_jar = dict()
+wrong_refresh_jar = dict()
+reuse_refresh_jar = dict()
+wrong_access_jar = dict()
+intezmeny_id = 0
+teacher_uid = 0
+teacher_refresh_jar = dict()
+teacher_access_jar = dict()
+student_uid = 0
+student_refresh_jar = dict()
+student_access_jar = dict()
+URL = "https://127.0.0.1:443"
+
 def handleApiError(message: str, response: requests.Response, expected_res_code, expected_res_body: str):
     global test_count
     global tests_passed
@@ -137,22 +153,6 @@ def testDateTime(base_message: str, method: str, endpoint_path: str, base_payloa
     if (include_date and include_time): base_payload[date_name] = "2025-12-24 25:02:02"
     testEndpoint(f"{base_message}, {date_name} overflow", method, endpoint_path, access_jar, base_payload, 400, "Bad request")
 
-
-test_count = 0
-tests_passed = 0
-refresh_jar = dict()
-access_jar = dict()
-wrong_refresh_jar = dict()
-reuse_refresh_jar = dict()
-wrong_access_jar = dict()
-intezmeny_id = 0
-teacher_uid = 0
-teacher_refresh_jar = dict()
-teacher_access_jar = dict()
-student_uid = 0
-student_refresh_jar = dict()
-student_access_jar = dict()
-URL = "https://127.0.0.1:443"
 
 def main():
     global test_count
@@ -344,6 +344,12 @@ def intezmenyUserEndpoints():
     handleApiError("Get profile", response, 200, '{"id":' + f'{response.json()["id"]}' + ',"display_name":"tester","email":"tester_student@test.com","phone_number":"123456789012345","role":null}')
     student_uid = response.json()["id"]
 
+    testToken("Get role", "POST", "/user/get_role", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
+    testId("Get role", "POST", "/user/get_role", {}, access_jar, "intezmeny_id", False, 200, True)
+    testEndpoint("Get role, method is not POST", "PATCH", "/user/get_role", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
+    testEndpoint("Get role, student", "POST", "/user/get_role", student_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200, "student")
+    testEndpoint("Get role, admin", "POST", "/user/get_role", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200, "admin")
+
     testId("Fire user", "POST", "/intezmeny/user/fire", {"uid": f"{student_uid}"}, access_jar, "intezmeny_id", False, 204, True)
     testId("Fire user", "POST", "/intezmeny/user/fire", {"intezmeny_id": f"{intezmeny_id}"}, access_jar, "uid", False, 204, True)
     testToken("Fire user", "POST", "/intezmeny/user/fire", {"intezmeny_id": f"{intezmeny_id}", "uid": f"{student_uid}"}, wrong_access_jar)
@@ -430,6 +436,7 @@ def intezmenyCreateEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}", "name": "test_teacher", "job": "test", "teacher_uid": f"{teacher_uid}"},
                  400, "Bad request")
 
+    testEndpoint("Get role, teacher", "POST", "/user/get_role", teacher_access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200, "teacher")
 
     testId("Create timetable element", "POST", "/intezmeny/create/timetable_element",
            {"start": "02:02:02", "duration": "02:02:02", "day": "4", "from": "2020-12-24", "until": "2020-12-25",
@@ -744,7 +751,7 @@ def intezmenyGetEndpoints():
                  {"intezmeny_id": f"{intezmeny_id}"}, 405, "")
 
     testEndpoint("Get timetable", "POST", "/intezmeny/get/timetable", access_jar, {"intezmeny_id": f"{intezmeny_id}"}, 200,
-                 '[{"id":1,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null},{"id":6,"start":"02:02:02","duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1}]')
+                 '[{"id":6,"start":"02:02:02","duration":"02:02:02","day":4,"from":"2020-12-24","until":"2020-12-25","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":1,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":2,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":null,"lesson_id":1,"teacher_id":1,"room_id":1},{"id":3,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":null,"teacher_id":1,"room_id":1},{"id":4,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":null,"room_id":1},{"id":5,"start":"03:03:03","duration":"03:03:03","day":5,"from":"2021-11-23","until":"2021-11-24","group_id":1,"lesson_id":1,"teacher_id":1,"room_id":null}]')
     testId("Get timetable", "POST", "/intezmeny/get/timetable", {}, access_jar, "intezmeny_id", False, 200, True)
     testToken("Get timetable", "POST", "/intezmeny/get/timetable", {"intezmeny_id": f"{intezmeny_id}"}, wrong_access_jar)
     testEndpoint("Get timetable, method not POST", "PATCH", "/intezmeny/get/timetable", access_jar,

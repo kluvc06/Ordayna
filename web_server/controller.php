@@ -461,6 +461,26 @@ class Controller
         return handleReturn(ControllerRet::success);
     }
 
+    public static function getRole(): null
+    {
+        $data = json_decode(file_get_contents("php://input"));
+        $ret = Controller::validateIntezmenyData($data, true);
+        if (is_a($ret, "Controller\ControllerRet") === true) return handleReturn($ret);
+        list($db, $intezmeny_id, $uid) = $ret;
+
+        $ret = User::partOfIntezmeny($db, $intezmeny_id, $uid, true);
+        if ($ret === false) return handleReturn(ControllerRet::unauthorised);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+
+        $ret = User::getRole($db, $intezmeny_id, $uid);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+
+        header('Content-Type: text/plain');
+        echo $ret;
+
+        return handleReturn(ControllerRet::success);
+    }
+
     public static function inviteToIntezmeny(): null
     {
         $data = json_decode(file_get_contents("php://input"));

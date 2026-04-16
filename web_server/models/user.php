@@ -41,6 +41,23 @@ class User
         }
     }
 
+    public static function getRole(DB $db, int $intezmeny_id, int $uid): string|null
+    {
+        try {
+            if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
+            return ($ret = $db->handleQueryResult($db->connection->execute_query(
+                '
+                    SELECT role_ FROM intezmeny_users
+                    LEFT JOIN users ON users.id = intezmeny_users.users_id
+                    WHERE users_id = ? AND intezmeny_id = ?
+                ',
+                array($uid, $intezmeny_id)
+            ))) === null ? null : $ret[0][0];
+        } catch (Exception) {
+            return $db->logError(false);
+        }
+    }
+
     // This shit might be slow
     public static function getUserViaEmail(DB $db, string $email): User|null
     {

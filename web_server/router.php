@@ -45,6 +45,7 @@ match ($req_uri) {
     '/token/get_access_token' => route('GET', [$controller, 'getAccessToken']),
     '/user/create' => route('POST', [$controller, 'createUser']),
     '/user/profile' => route('GET', [$controller, 'getProfile']),
+    '/user/get_role' => route('POST', [$controller, 'getRole']),
     '/user/logout' => route('GET', [$controller, 'logout']),
     '/user/delete' => route('DELETE', [$controller, 'deleteUser']),
     '/user/change/display_name' => route('POST', [$controller, 'changeDisplayName']),

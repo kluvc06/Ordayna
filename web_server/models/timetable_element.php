@@ -125,7 +125,7 @@ class TimetableElement
     {
         try {
             if ($db->logError($db->connection->select_db('ordayna_intezmeny_' . $intezmeny_id)) === null) return null;
-            $ret = $db->handleQueryResult($db->connection->query("SELECT * FROM timetable"));
+            $ret = $db->handleQueryResult($db->connection->query("SELECT * FROM timetable ORDER BY day, start"));
             if ($ret === null) return null;
             $arr = array();
             for ($i = 0; $i < count($ret); $i++) {

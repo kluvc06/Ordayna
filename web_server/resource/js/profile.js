@@ -22,7 +22,7 @@ async function loadUserData() {
     const result = await response.json();
     document.getElementById("intezmeny_list").innerHTML = "";
     for (let i = 0; i < result.length; i++) {
-      document.getElementById("intezmeny_list").innerHTML += result[i].id + ": " + "<a onclick='loadIntezmeny(" + result[i].id + ")'>" + result[i].name + "</a>" + "<br>";
+      document.getElementById("intezmeny_list").innerHTML += `${result[i].id}: <a onclick="loadIntezmeny(\`${result[i].id}\`, \`${result[i].name}\`)">${result[i].name}</a><br>`;
     }
   }
   {
@@ -38,9 +38,29 @@ async function loadUserData() {
   }
 }
 
-async function loadIntezmeny(id) {
-  document.cookie = "intezmeny_id=" + id + "";
-  location.replace("home.html");
+async function loadIntezmeny(id, name) {
+  const response = await fetch(url + "user/get_role", {
+    method: "POST",
+    body: JSON.stringify({
+      intezmeny_id: id,
+    })
+  });
+  if (response.ok !== true) {
+    return;
+  }
+  const result = await response.text();
+  document.cookie = "intezmeny_id=" + id;
+  document.cookie = "intezmeny_name=" + name;
+  if (result === "student") {
+    document.cookie = "user_role=Diák";
+    location.replace("home_stud.html");
+  } else if (result === "teacher") {
+    document.cookie = "user_role=Tanár";
+    location.replace("home_teach.html");
+  } else if (result === "admin") {
+    document.cookie = "user_role=Adminisztrátor";
+    location.replace("home.html");
+  }
 }
 
 function hide_show() {
