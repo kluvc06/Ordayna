@@ -8,15 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
-  <style>
-    .container {
-      height: 90%;
-      width: 95%;
-      margin-left: 1% !important;
-    }
 
-    /* .container{border: 3px purple solid;} */
-  </style>
 </head>
 
 <body>
@@ -24,8 +16,16 @@
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
 
+  <div class="header row">
+
+    <div id="i-name" class="col">{Baranya Vármegyei SZC Radnóti Miklós Közgazdasági Technikum} {"Admin"} </div>
+    <div class="right-btn col"><button onclick="location.replace('profile.html')" id="user_button">Felhasználó</button>
+    </div>
+
+  </div>
+
   <h1>Házi feladat</h1>
-  <div class="container">
+  <div class="container hw-s">
     <div class="row g-1 rowcols-4 ">
       <div class="col-2 " id="border">
         <div class="box-long">
@@ -60,9 +60,7 @@
       </div>
     </div>
     <button onclick="location.replace('home.html')" id="home_button">home</button>
-    <button onclick="location.replace('profile.html')" id="user_button">Felhasználó</button>
   </div>
-  <script src="js/homework_stud.js" type="module"></script>
 </body>
 
 </html>

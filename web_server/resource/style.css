@@ -243,3 +243,29 @@ h1 {
 .prof-cont {
     margin-top: 5%;
 }
+
+.hw-t {
+      height: 90%;
+      width: 95%;
+      margin-left: 1% !important;
+    }
+
+.hw-s {
+      height: 90%;
+      width: 95%;
+      margin-left: 1% !important;
+    }
+
+ .tt-c {
+      height: 90%;
+      width: 90%;
+      margin-left: 2% !important;
+    }
+
+    .csoportok-btn {
+    margin-top: 0.2em;
+    background-color: var(--blue);
+    border: var(--dark-purple) solid 3px;
+    color: var(--off-white);
+    border-radius: 0.3em;
+}

@@ -68,7 +68,7 @@ async function prepareClass() {
     }
     let classes = await response.json();
     let data = `
-      <select id="orig" size="5" onchange="modifyClassUpdate()">
+      <select id="orig" size="3" onchange="modifyClassUpdate()">
     `;
     for (let i = 0; i < classes.length; i++) {
       data += `<option value="${classes[i].id}">${classes[i].name}</option>`
@@ -94,7 +94,7 @@ async function prepareClass() {
     }
     let classes = await response.json();
     let data = `
-      <select id="orig" size="5">
+      <select id="orig" size="3">
     `;
     for (let i = 0; i < classes.length; i++) {
       data += `<option value="${classes[i].id}">${classes[i].name}</option>`
@@ -206,7 +206,7 @@ async function deleteClass() {
   await prepareClass();
 }
 
-async function prepare() {
+async function prepareGroup() {
   if (typeof document.getElementById("another_choice").options[document.getElementById("another_choice").selectedIndex] === 'undefined') {
     document.getElementById("another_choice").selectedIndex = 0;
   }
@@ -261,7 +261,7 @@ async function prepare() {
       return;
     }
     let classes = await response_2.json();
-    let html = `<select id="orig" size="5" onchange="modifyGroupUpdate()">`;
+    let html = `<select id="orig" size="3" onchange="modifyGroupUpdate()">`;
     for (let i = 0; i < groups.length; i++) {
       html += `<option value="${groups[i].id}">${groups[i].name}</option>`;
     }
@@ -296,7 +296,7 @@ async function prepare() {
     }
     let groups = await response.json();
     let data = `
-      <select id="orig" size="5">
+      <select id="orig" size="3">
     `;
     for (let i = 0; i < groups.length; i++) {
       data += `<option value="${groups[i].id}">${groups[i].name}</option>`
@@ -469,7 +469,7 @@ async function prepareLesson() {
     }
     let lessons = await response.json();
     let data = `
-      <select id="orig" size="5" onchange="modifyLessonUpdate()">
+      <select id="orig" size="3" onchange="modifyLessonUpdate()">
     `;
     for (let i = 0; i < lessons.length; i++) {
       data += `<option value="${lessons[i].id}">${lessons[i].name}</option>`
@@ -495,7 +495,7 @@ async function prepareLesson() {
     }
     let lessons = await response.json();
     let data = `
-      <select id="orig" size="5">
+      <select id="orig" size="3">
     `;
     for (let i = 0; i < lessons.length; i++) {
       data += `<option value="${lessons[i].id}">${lessons[i].name}</option>`
@@ -633,7 +633,7 @@ async function prepareRoom() {
     }
     let rooms = await response.json();
     let data = `
-      <select id="orig" size="5" onchange="modifyRoomUpdate()">
+      <select id="orig" size="3" onchange="modifyRoomUpdate()">
     `;
     for (let i = 0; i < rooms.length; i++) {
       data += `<option value="${rooms[i].id}">${rooms[i].name}</option>`
@@ -641,7 +641,7 @@ async function prepareRoom() {
     data += `
       </select>
       <input id="room_name" placeholder="Módosított név">
-      <input id="room_type" placeholder=""Módosított type>
+      <input id="room_type" placeholder="Módosított type">
       <input id="room_space" placeholder="Módosított capacity">
       <button onclick="modifyRoom()">Szoba módosítása</button>
       <div class="errors">
@@ -663,7 +663,7 @@ async function prepareRoom() {
     }
     let rooms = await response.json();
     let data = `
-      <select id="orig" size="5">
+      <select id="orig" size="3">
     `;
     for (let i = 0; i < rooms.length; i++) {
       data += `<option value="${rooms[i].id}">${rooms[i].name}</option>`
@@ -801,7 +801,7 @@ async function prepareTeacher() {
     let html = `
       <input id="teacher_name" placeholder="Tanár név">
       <input id="teacher_job" placeholder="Szak">
-      <select id="teacher_user" >
+      <select id="teacher_user" size="3">
         <option value="-1">-</option>
     `;
     for (let i = 0; i < users.length; i++) {
@@ -839,7 +839,7 @@ async function prepareTeacher() {
     }
     let teachers = await response.json();
     let data = `
-      <select id="orig" size="5" onchange="modifyTeacherUpdate()">
+      <select id="orig" size="3" onchange="modifyTeacherUpdate()">
     `;
     for (let i = 0; i < teachers.length; i++) {
       data += `<option value="${teachers[i].id}">${teachers[i].name}</option>`
@@ -848,7 +848,7 @@ async function prepareTeacher() {
       </select>
       <input id="teacher_name" placeholder="Név módosítása">
       <input id="teacher_job" placeholder="Szak módosítása">
-      <select id="teacher_user" size="5">
+      <select id="teacher_user" size="3">
         <option value="-1">-</option>
     `;
     for (let i = 0; i < users.length; i++) {
@@ -875,7 +875,7 @@ async function prepareTeacher() {
       return;
     }
     let teachers = await response.json();
-    let data = `<select id = "orig" size = "5">`;
+    let data = `<select id = "orig" size = "3">`;
     for (let i = 0; i < teachers.length; i++) {
       data += `<option value="${teachers[i].id}"> ${teachers[i].name}</option>`
     }
@@ -1064,7 +1064,7 @@ async function prepareUser() {
     }
     let profile = await response_2.json();
     let data = `
-      <select id="orig" size="5">
+      <select id="orig" size="3">
     `;
     for (let i = 0; i < users.length; i++) {
       if (users[i].id === profile.id) continue;
