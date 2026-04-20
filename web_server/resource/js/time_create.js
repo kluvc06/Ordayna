@@ -7,7 +7,7 @@ let intezmeny_name = getCookie("intezmeny_name");
 if (intezmeny_name === null) location.replace("profile.html");
 let user_role = getCookie("user_role");
 if (user_role === null) location.replace("profile.html");
-document.getElementById("i_name").innerHTML = `${intezmeny_name} ${user_role}`;
+document.getElementById("i-name").innerHTML = `${intezmeny_name} ${user_role}`;
 let teachers = null;
 let lessons = null;
 let rooms = null;
