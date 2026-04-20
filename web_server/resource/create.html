@@ -10,23 +10,36 @@
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
+<style>
+
+</style>
 
 <body>
+   <div class="header row">
+
+    <div id="i-name" class="col">{Baranya Vármegyei SZC Radnóti Miklós Közgazdasági Technikum} {"Admin"} </div>
+    <div class="right-btn col"><button onclick="location.replace('profile.html')" id="user_button">Felhasználó</button></div>
+    
+  </div>
+  <h1>Create Page</h1>
+  <div class="cont">
+    
+    <select id="create_choice" onchange="prepareCreate()" size="6">
+      <option value="class">Osztály</option>
+      <option value="group">Csoport</option>
+      <option value="lesson">Tanóra</option>
+      <option value="room">Szoba</option>
+      <option value="teacher">Tanár</option>
+      <option value="user">Felhasználó meghívása</option>
+    </select>
+    <span id="form"></span>
+  </div>
+  <button onclick="location.replace('home.html')" id="home_button">Home</button>
+  <script src="js/create.js" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
-
-  <select id="create_choice" onchange="prepareCreate()" size="6">
-    <option value="class">Osztály</option>
-    <option value="group">Csoport</option>
-    <option value="lesson">Tanóra</option>
-    <option value="room">Szoba</option>
-    <option value="teacher">Tanár</option>
-    <option value="user">Felhasználó meghívása</option>
-  </select>
-  <span id="form"></span>
-
-  <script src="js/create.js" type="module"></script>
+  
 </body>
 
 </html>
