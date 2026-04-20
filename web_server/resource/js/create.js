@@ -1172,3 +1172,4 @@ window.deleteTeacher = deleteTeacher;
 window.prepareUser = prepareUser;
 window.inviteUser = inviteUser;
 window.fireUser = fireUser;
+window.returnHome = returnHome;
