@@ -92,21 +92,27 @@ class Intezmeny
         }
     }
 
-    /** The second worst thing to happen to those orphans */
-    public static function deleteOrphanedIntezmenys(DB $db): true|null
+    /**
+    * The second worst thing to happen to those orphans
+    * Returns deleted intezmeny's ids
+    */
+    public static function deleteOrphanedIntezmenys(DB $db): array|null
     {
         try {
             if ($db->logError($db->connection->select_db('ordayna_main_db')) === null) return null;
             $ids = $db->handleQueryResult($db->connection->query("CALL getOrphanedIntezmenys()"));
             if ($ids === null) return null;
             for ($i = 0; $i < count($ids); $i++) {
+                $ids[$i] = $ids[$i][0];
+            }
+            for ($i = 0; $i < count($ids); $i++) {
                 if ($db->handleQueryResult($db->connection->execute_query(
                     'DELETE FROM intezmeny WHERE id = ?',
-                    array($ids[$i][0])
+                    array($ids[$i])
                 )) === null) return null;
                 if ($db->handleQueryResult($db->connection->query('DROP DATABASE ordayna_intezmeny_' . $ids[$i][0])) === null) return null;
             }
-            return true;
+            return $ids;
         } catch (Exception) {
             return $db->logError(false);
         }

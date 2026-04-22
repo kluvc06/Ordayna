@@ -254,7 +254,11 @@ class Controller
         if (password_verify($pass, $pass_hash) === false) return handleReturn(ControllerRet::unauthorised);
 
         if (User::deleteUser($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
-        if (Intezmeny::deleteOrphanedIntezmenys($db) === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = Intezmeny::deleteOrphanedIntezmenys($db);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        for ($i = 0; $i < count($ret); $i++) {
+            if (rmdirRecursive("user_data/intezmeny_" + $ret[$i]) === false) return handleReturn(ControllerRet::unexpected_error);
+        }
 
         if (User::revokeAllTokens($db, $token->claims()->get("uid")) === null) return handleReturn(ControllerRet::unexpected_error);
 
@@ -553,7 +557,7 @@ class Controller
 
         $ret = User::getInvites($db, $token->claims()->get("uid"));
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        
+
         header('Content-Type: application/json');
         echo json_encode($ret);
 
@@ -573,7 +577,7 @@ class Controller
 
         $ret = User::getAllIntezmenyUsers($db, $intezmeny_id);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
-        
+
         header('Content-Type: application/json');
         echo json_encode($ret);
 
@@ -790,11 +794,13 @@ class Controller
     public static function createHomework(): null
     {
         $data = json_decode(file_get_contents("php://input"));
-        $description = Controller::validateString(@$data->description, max_chars: 500);
+        $description = Controller::validateString(@$data->description);
         if ($description === null) return handleReturn(ControllerRet::bad_request);
         $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
         if ($due === false) $due = null;
+        $group_id = Controller::validateInteger(@$data->group_id);
+        if ($group_id === null) return handleReturn(ControllerRet::bad_request);
         $lesson_id = Controller::validateInteger(@$data->lesson_id, null_allowed: true);
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
         if ($lesson_id === false) $lesson_id = null;
@@ -808,6 +814,9 @@ class Controller
         $ret = User::isTeacher($db, $intezmeny_id, $uid);
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = Group::groupExists($db, $intezmeny_id, $group_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($lesson_id !== null) {
             $ret = Lesson::lessonExists($db, $intezmeny_id, $lesson_id);
             if ($ret === false) return handleReturn(ControllerRet::bad_request);
@@ -819,7 +828,7 @@ class Controller
             if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         }
 
-        if (Homework::createHomework($db, $intezmeny_id, $description, $due !== null ? $due->format("Y-m-d h:i:s") : null, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
+        if (Homework::createHomework($db, $intezmeny_id, $description, $due !== null ? $due->format("Y-m-d h:i:s") : null, $group_id, $lesson_id, $teacher_id) === null) return handleReturn(ControllerRet::unexpected_error);
 
         return handleReturn(ControllerRet::success_created);
     }
@@ -1263,11 +1272,13 @@ class Controller
         $data = json_decode(file_get_contents("php://input"));
         $homework_id = Controller::validateInteger(@$data->homework_id);
         if ($homework_id === null) return handleReturn(ControllerRet::bad_request);
-        $description = Controller::validateString(@$data->description, max_chars: 500);
+        $description = Controller::validateString(@$data->description);
         if ($description === null) return handleReturn(ControllerRet::bad_request);
         $due = Controller::validateTime(@$data->due, date_allowed: true, time_allowed: true, null_allowed: true);
         if ($due === null) return handleReturn(ControllerRet::bad_request);
         if ($due === false) $due = null;
+        $group_id = Controller::validateInteger(@$data->group_id);
+        if ($group_id === null) return handleReturn(ControllerRet::bad_request);
         $lesson_id = Controller::validateInteger(@$data->lesson_id, null_allowed: true);
         if ($lesson_id === null) return handleReturn(ControllerRet::bad_request);
         if ($lesson_id === false) $lesson_id = null;
@@ -1282,6 +1293,9 @@ class Controller
         if ($ret === false) return handleReturn(ControllerRet::unauthorised);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         $ret = Homework::homeworkExists($db, $intezmeny_id, $homework_id);
+        if ($ret === false) return handleReturn(ControllerRet::bad_request);
+        if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
+        $ret = Group::groupExists($db, $intezmeny_id, $group_id);
         if ($ret === false) return handleReturn(ControllerRet::bad_request);
         if ($ret === null) return handleReturn(ControllerRet::unexpected_error);
         if ($lesson_id !== null) {
@@ -1301,6 +1315,7 @@ class Controller
             $homework_id,
             $description,
             $due !== null ? $due->format("Y-m-d h:i:s") : null,
+            $group_id,
             $lesson_id,
             $teacher_id
         ) === null) return handleReturn(ControllerRet::unexpected_error);

@@ -217,7 +217,7 @@ async function lockData() {
     elem_id === false || start === false || duration === false || from === false || until === false ||
     group_id === false || lesson_id === false || teacher_id === false || room_id === false
   ) return;
-  if (elem_id == "-1") {
+  if (elem_id === "-1") {
     const response = await fetch(url + "intezmeny/create/timetable_element", {
       method: "POST",
       body: JSON.stringify({

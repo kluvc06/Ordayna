@@ -27,7 +27,7 @@
         <div class="box-long">
           <p class="h6">Osztályok</p>
           <hr>
-          
+          <select class="listbox w-100" id="groups" size="15" onchange="updateHomeworks()"></select>
         </div>
       </div>
       <div class="col-10 g-2">
@@ -35,6 +35,14 @@
           <div class="box-smaller">
             <p class="h6">Feladatok kiadás</p>
             <hr>
+            <select id="choice" onchange="refill()"></select>
+            <input type="text" id="new_description">
+            <input type="text" id="new_due" placeholder="YYYY-MM-DD hh:mm:ss">
+            <select id="new_lesson"></select>
+            <select id="new_teacher"></select>
+            <button onclick="deleteHomework()">🗑</button>
+            <button onclick="newHomework()">+</button>
+            <div id="err"></div>
           </div>
         </div>
         <div class="row rowcols-2 g-0">
@@ -55,6 +63,7 @@
           <div class="box-smaller">
             <p class="h6">Kiadott Feladatok</p>
             <hr>
+            <div id="homeworks"></div>
           </div>
         </div>
       </div>

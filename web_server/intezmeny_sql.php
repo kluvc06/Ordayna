@@ -75,6 +75,7 @@ CREATE OR REPLACE TABLE homework (
     description TEXT NOT NULL,
     published   DATETIME NOT NULL DEFAULT NOW(),
     due         DATETIME,
+    group_id    INT UNSIGNED NOT NULL,
     lesson_id   INT UNSIGNED,
     teacher_id  INT UNSIGNED,
     CONSTRAINT fk_homework_lesson FOREIGN KEY ( lesson_id ) REFERENCES lesson( id ) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -211,14 +212,14 @@ BEGIN
     DELETE FROM timetable WHERE id=in_id;
 END;
 
-CREATE OR REPLACE PROCEDURE newHomework ( IN in_description TEXT, IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE newHomework ( IN in_description TEXT, IN in_due DATETIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
 BEGIN
-    INSERT INTO homework (description, due, lesson_id, teacher_id) VALUES (in_description, in_due, in_lesson_id, in_teacher_id);
+    INSERT INTO homework (description, due, group_id, lesson_id, teacher_id) VALUES (in_description, in_due, in_group_id, in_lesson_id, in_teacher_id);
 END;
 
-CREATE OR REPLACE PROCEDURE modHomework ( IN in_id INT UNSIGNED, IN in_description TEXT, IN in_due DATETIME, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
+CREATE OR REPLACE PROCEDURE modHomework ( IN in_id INT UNSIGNED, IN in_description TEXT, IN in_due DATETIME, IN in_group_id INT UNSIGNED, IN in_lesson_id INT UNSIGNED, IN in_teacher_id INT UNSIGNED )
 BEGIN
-    UPDATE homework SET description=in_description, due=in_due, lesson_id=in_lesson_id, teacher_id=in_teacher_id WHERE in_id=id;
+    UPDATE homework SET description=in_description, due=in_due, group_id=in_group_id, lesson_id=in_lesson_id, teacher_id=in_teacher_id WHERE in_id=id;
 END;
 
 CREATE OR REPLACE PROCEDURE delHomework ( IN in_id INT UNSIGNED )

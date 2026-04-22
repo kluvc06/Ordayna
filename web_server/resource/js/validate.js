@@ -2,7 +2,7 @@
 export function validateString(id, err_id, max_len, min_len, name) {
   const val = document.getElementById(id).value;
   if (val.length === 0) {
-    document.getElementById(err_id).innerHTML = "Úres " + name + " nem megengedett<br>";
+    document.getElementById(err_id).innerHTML = "Üres " + name + " nem megengedett<br>";
     return false;
   } else if (val.length > max_len) {
     document.getElementById(err_id).innerHTML = "A " + name + " maximum hossza " + max_len + "<br>";
@@ -19,7 +19,7 @@ export function validateString(id, err_id, max_len, min_len, name) {
 export function validateNumber(id, err_id, max, min, name) {
   let val = document.getElementById(id).value;
   if (val.length === 0) {
-    document.getElementById(err_id).innerHTML = "Úres " + name + " nem megengedett<br>";
+    document.getElementById(err_id).innerHTML = "Üres " + name + " nem megengedett<br>";
     return false;
   } else if (val.match(/^\d+$/) === null) {
     document.getElementById(err_id).innerHTML = "A " + name + " nem egész szám<br>";
@@ -86,7 +86,7 @@ export function validateTime(id, err_id, name) {
 export function validateEmail(id, err_id) {
   const val = document.getElementById(id).value;
   if (val.length === 0) {
-    document.getElementById(err_id).innerHTML = "Úres email nem megengedett<br>";
+    document.getElementById(err_id).innerHTML = "Üres email nem megengedett<br>";
     return false;
   } else if (val.length > 254) {
     document.getElementById(err_id).innerHTML = "A email maximum hossza 254<br>";
