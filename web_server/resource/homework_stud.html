@@ -18,60 +18,49 @@
 
   <div class="header row">
 
-    <div id="i-name" class="col"></div>
+    <div id="i-name" class="col">{Baranya Vármegyei SZC Radnóti Miklós Közgazdasági Technikum} {"Admin"} </div>
     <div class="right-btn col"><button onclick="location.replace('profile.html')" id="user_button">Felhasználó</button>
     </div>
 
   </div>
 
   <h1>Házi feladat</h1>
-  <select size="10" id="groups" onchange="updateHomeworks()"></select>
   <div class="container hw-s">
-    <div class="row g-2">
-
-      <div class="col-12 col-md-2" id="border">
+    <div class="row g-1 rowcols-4 ">
+      <div class="col-2 " id="border">
         <div class="box-long">
           <p class="h6">Tantárgyak</p>
           <hr>
-          <select name="sometext" size="26" class="listbox" id="tantargy" onchange="updateHomeworks()"></select>
+          <select name="sometext" size="26" class="listbox" id="tantargy" onchange="loadHomeworks(this)"></select>
         </div>
       </div>
-
-      <div class="col-12 col-md-10 g-1">
-
-        <div class="row mb-2">
-          <div class="col-12" id="border">
-            <div class="box-small">
-              <p class="h6">Feladatok</p>
-              <hr>
-              <div id="feladatok"></div>
-            </div>
+      <div class="col-10 g-1">
+        <div class="col" id="border">
+          <div class="box-small">
+            <p class="h6">Feladatok</p>
+            <hr>
+            <div id="feladatok"></div>
           </div>
         </div>
-
-        <div class="row g-2">
-          <div class="col-12 col-md-9" id="border">
+        <div class="row rowcols-2 g-0">
+          <div class="col-9 " id="border">
             <div class="box">
               <p class="h6">Feladat leírás</p>
               <hr>
               <div id="feladatok_leiras"></div>
             </div>
           </div>
-
-          <div class="col-12 col-md-3" id="border">
+          <div class="col-3 " id="border">
             <div class="box">
               <p class="h6">Leadás</p>
               <hr>
             </div>
           </div>
         </div>
-
       </div>
     </div>
+    <button onclick="location.replace('home.html')" id="home_button">home</button>
   </div>
-  <button onclick="returnHome()" id="home_button">home</button>
-
-  <script src="js/homework_stud.js" type="module"></script>
 </body>
 
 </html>

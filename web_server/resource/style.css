@@ -7,14 +7,14 @@
 }
 
 body {
-
+    
     background-color: var(--off-white);
     padding: 0px;
     color: var(--light-purple);
     border-radius: 0.3em;
 }
 
-input,select,button, .csoportok-btn {
+input,select,button {
     margin-top: 0.2em;
     background-color: var(--blue);
     border: var(--dark-purple) solid 3px;
@@ -62,7 +62,7 @@ h1 {
     color: var(--dark-purple);
 }
 
-.fix-width {
+.fix-width{
     overflow-wrap: break-word;
 }
 
@@ -77,27 +77,26 @@ h1 {
     margin-right: 0;
 }
 
-.right-btn {
+.right-btn{
     top: 0px;
     text-align: right;
     right: 0px;
 }
 
-#i-name {
+#i-name{
     font-size: 1.1em;
 }
 
-.header {
+.header{
     padding: 1.2em;
     background-color: var(--dark-purple);
-    color: var(--off-white);
+    color:var(--off-white);
     position: sticky;
     top: 0px;
-    height: fit-content;
+    height:fit-content;
     font-size: 1em;
     margin-bottom: 0.3em;
 }
-
 #to_login_button,#to_signup_button,.change {
     background-color: var(--off-white);
     color: var(--blue);
@@ -114,17 +113,17 @@ h1 {
 #pfp img {
     object-fit: cover;
     width: 100%;
-        height: 100%;
-    
-    }
-    
-    #pfp {
-        overflow: hidden;
-        width: 13.5vw;
-        height: 13.5vw;
-        border: 1.5px var(--dark-purple) solid;
-        border-radius: 50%;
-    }
+    height: 100%;
+
+}
+
+#pfp {
+    overflow: hidden;
+    width: 13.5vw;
+    height: 13.5vw;
+    border: 1.5px var(--dark-purple) solid;
+    border-radius: 50%;
+}
 
 #bitch_table {
     width: 100%;
@@ -134,10 +133,12 @@ h1 {
     }
 }
 
+
+
 .listbox {width: 100%;}
 
 .box-md-long,.box-md-long-nb {height: 44.4vh;}
-.box,.box-nb {height: 59.5vh}
+.box,.box-nb {height: 59.5vh;}
 .box-less-long,.box-less-long-nb {height: 85vh;}
 .box-long,.box-long-nb {height: 89vh;}
 .box-small,.box-small-nb {height: 29.5vh;}
@@ -145,26 +146,26 @@ h1 {
 .box-smaller,.box-smaller-nb {height: 26.7vh;}
 .box-smallest,.box-smallest-nb {height: 19.5vh;}
 .box-tiny,.box-tiny-nb {height: 10.1vh;}
+
 .box-tiny,.box-smallest,.box,.box-small,.box-long,.box-medium,.box-smaller,.box-md-long,.box-less-long,.intezmeny-box {border: 2px var(--dark-purple) solid;padding: 1em;border-radius: 0.4em;}
 
 .intezmeny-box {
     margin: 1.1em auto;
     width: fit-content;
 }
-
-.cont {
-    margin: 1.5em;
+.cont{
+    margin:1.5em ;
     width: fit-content;
     font-size: 1.5em;
-}
+  }
 
-.kerek {
+.kerek{
     font-weight: bold;
     text-decoration: underline var(--dark-purple);
     color: var(--light-purple);
 }
 
-.hm-btn {
+.hm-btn{
     height: 95px;
     width: 95px;
 }
@@ -175,6 +176,7 @@ h1 {
     min-height: 41.2vh;
 
     font-family: 'Trebuchet MS', sans-serif;
+    font-size: 1.14em;
     background-color: var(--off-white);
     border: 2px solid var(--dark-purple);
     border-radius: 0.3em;
@@ -243,43 +245,27 @@ h1 {
 }
 
 .hw-t {
-    height: 90%;
-    width: 95%;
-    margin-left: 1% !important;
-}
+      height: 90%;
+      width: 95%;
+      margin-left: 1% !important;
+    }
 
 .hw-s {
-    
-    margin-left: 1% !important;
-}
+      height: 90%;
+      width: 95%;
+      margin-left: 1% !important;
+    }
 
-.tt-c {
-    font-size: 0.8em;
-    margin-left: 0 !important;
-}
+ .tt-c {
+      height: 90%;
+      width: 90%;
+      margin-left: 2% !important;
+    }
 
-
-
-.ora-card{
-    border:(--light-purple) var solid 1px;
-    border-radius: 0.5em;
-    padding: 0.3em;
+    .csoportok-btn {
+    margin-top: 0.2em;
+    background-color: var(--blue);
+    border: var(--dark-purple) solid 3px;
     color: var(--off-white);
-    background-color: var(--dark-purple);
-    font-size: 0.9em;
-    margin: 0;
-}
-
-.cop{
-    border: 2px var(--dark-purple) solid;
-    padding: 0.8em;
-    border-radius: 0.4em;
-    background-color: var(--light-purple);
-    color: var(--off-white);
-}
-
-#white{
-    color: var(--off-white);
-    background-color: var(--off-white);
-    height: 1.2px;
+    border-radius: 0.3em;
 }
