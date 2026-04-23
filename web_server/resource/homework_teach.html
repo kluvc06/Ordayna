@@ -20,13 +20,14 @@
 
   </div>
 
-  <h1>Házi feladat(teacher)</h1>
+  <h1>Házi feladat kiadás</h1>
   <div class="container hw-t">
     <div class="row g-2">
-      <div class="col-2">
+      <div class="col-12 col-md-2">
         <div class="box-long">
-          <p class="h6">Osztályok</p>
+          <p class="h6">Csoportok</p>
           <hr>
+          <select class="listbox w-100" id="groups" size="15" onchange="updateHomeworks()"></select>
         </div>
       </div>
       <div class="col-10 g-2">
@@ -34,26 +35,58 @@
           <div class="box-smaller">
             <p class="h6">Feladatok kiadás</p>
             <hr>
+
+            <div class="input-div mt-3">
+            <div class="table-responsive">
+              <table class="w-100">
+                <tr>
+                  <th>Feladat id</th>
+                  <th>Tantárgy</th>
+                  <th>Tanár</th>
+                  <th>Határidő</th>
+                  <th></th>
+                  <th></th>
+                </tr>
+                <tr>
+                  <td><select id="choice" onchange="refill()" class="form-select"></select></td>
+                  <td>
+                    <select id="new_lesson" class="form-select"></select>
+                  </td>
+                  <td>
+                    <select id="new_teacher" class="form-select"></select>
+                  </td>
+                  <td><input type="text" id="new_due" placeholder="YYYY-MM-DD hh:mm:ss" class="form-control"></td>
+                  <td><button onclick="deleteHomework()" class="btn btn-danger btn-sm">🗑</button></td>
+                  <td><button onclick="newHomework()" class="btn btn-success btn-sm">+</button></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+            
+            
+            
+
+            <div id="err"></div>
           </div>
         </div>
         <div class="row rowcols-2 g-0">
-          <div class="col-9">
+          <div class="col">
             <div class="box-medium">
               <p class="h6">Feladat leírás</p>
               <hr>
+                
+
+                <textarea rows="10" cols="30" id="new_description"></textarea>
             </div>
           </div>
-          <div class="col-3">
-            <div class="box-medium">
-              <p class="h6">Leadás</p>
-              <hr>
-            </div>
-          </div>
+          
         </div>
         <div class="col">
           <div class="box-smaller">
             <p class="h6">Kiadott Feladatok</p>
             <hr>
+            <div id="homeworks"></div>
           </div>
         </div>
       </div>
